@@ -105,28 +105,26 @@ public class DashboardView {
          Button btnInforme = new Button("Generar Informe de Actividades");
          btnInforme.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10px 20px; -fx-font-weight: bold;");
          btnInforme.setOnAction(e -> {
-             controlador.generarTodosLosInformes();
-             //Contrato seleccionado = tabla.getSelectionModel().getSelectedItem();
-             //if(seleccionado != null){
-             //    controlador.generarInformeActividades(seleccionado);
-             //} else {
-             //    System.out.println("⚠️ Por favor, selecciona un colaborador de la tabla primero.");
-             //}
+             System.out.println("🔄 Generando Informes de Actividades...");
+             controlador.generarSoloInformesActividades();
          });
 
          Button btnFm38 = new Button("Generar FM38");
          btnFm38.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-padding: 10px 20px; -fx-font-weight: bold;");
          btnFm38.setOnAction(e -> {
-             Contrato seleccionado = tabla.getSelectionModel().getSelectedItem();
-             if (seleccionado != null) {
-                 controlador.generarfm38(seleccionado);
-             } else {
-                 System.out.println("⚠️ Por favor, selecciona un colaborador de la tabla primero.");
-             }
+             System.out.println("🔄 Generando formularios FM38...");
+             controlador.generarSoloFM38();
+         });
+         
+         Button btnGenerarTodo = new Button("Generar 05");
+         btnGenerarTodo.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-padding: 10px 20px; -fx-font-weight: bold;");
+         btnGenerarTodo.setOnAction(e -> {
+             System.out.println("🔄 Generando todos los documentos...");
+             controlador.generarTodosLosInformes();
          });
 
 
-         bottomBar.getChildren().addAll(btnInforme, btnFm38);
+         bottomBar.getChildren().addAll(btnInforme, btnFm38, btnGenerarTodo);
          contenidoDerecho.setBottom(bottomBar);
 
          root.setCenter(contenidoDerecho);
