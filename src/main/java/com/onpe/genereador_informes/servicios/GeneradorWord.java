@@ -3,11 +3,15 @@ package com.onpe.genereador_informes.servicios;
 import com.onpe.genereador_informes.model.Actividad;
 import com.onpe.genereador_informes.model.Contrato;
 import com.onpe.genereador_informes.model.Firma;
+import com.onpe.genereador_informes.database.Conexion;
 import org.apache.poi.xwpf.usermodel.*;
 import com.onpe.genereador_informes.DAO.FirmaDAO;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,6 +20,25 @@ import java.util.Locale;
 
 public class GeneradorWord {
     private FirmaDAO firmaDAO = new FirmaDAO();
+
+    private String[] obtenerEncargado() {
+        String[] datos = {"", ""}; // [0] = nombre, [1] = cargo
+        String sql = "SELECT nombre, cargo FROM tb_encargados WHERE id_encargado = 1";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                datos[0] = rs.getString("nombre");
+                datos[1] = rs.getString("cargo");
+            }
+            rs.close();
+            pstmt.close();
+        } catch (Exception e) {
+            System.err.println("Error al obtener encargado: " + e.getMessage());
+        }
+        return datos;
+    }
     public void generarDocumento(Contrato contrato, String rutaPlantilla, String rutaSalida){
         try{
             //Abrir el archivo
@@ -36,8 +59,9 @@ public class GeneradorWord {
                     actividades.add(a.getDescripcion());
                 }
             }
-            String descripcion_firma = "Gerente de la Gerencia de Gestión Electoral";
-            String nombreEncargado = "José Edilberto Samamé Blas";
+            String[] encargado = obtenerEncargado();
+            String descripcion_firma = encargado[1];
+            String nombreEncargado = encargado[0];
             String nombreEncargadoFM38 = nombreEncargado.toUpperCase();
             LocalDate hoy = LocalDate.now();
             Locale idiomaEspaniol = new Locale("es", "ES");
@@ -182,7 +206,7 @@ public class GeneradorWord {
         }
 
         if (!encontrado) {
-            System.out.println("❌ ERROR: No se encontro el tag XXXACTIVIDADESXXX en el documento.");
+            // Tag no encontrado, es normal en FM38
         }
     }
 

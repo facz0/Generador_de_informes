@@ -1,55 +1,61 @@
 package com.onpe.genereador_informes.DAO;
 
 import com.onpe.genereador_informes.database.Conexion;
-import com.onpe.genereador_informes.model.Actividad;
 import com.onpe.genereador_informes.model.Cargo;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CargoDAO {
 
-    public List<Cargo> obtenerCargosConActividades(){
-        List<Cargo> listaCargos = new ArrayList<>();
-
-        // 1. Consulta principal: Traer los cargos
-        String sqlCargos = "SELECT id_cargo, Nombre_cargo FROM Cargos";
-
-        // 2. Consulta secundaria: Traer actividades filtrando por el ID del cargo (el '?' es un parámetro dinámico)
-        String sqlActividades = "SELECT id_actividad, id_cargo, descripcion FROM Actividades WHERE id_cargo = ?";
-
-        try{
+    public List<Cargo> obtenerTodos() {
+        List<Cargo> lista = new ArrayList<>();
+        String sql = "SELECT id_cargo, nombre_cargo FROM tb_cargo ORDER BY nombre_cargo";
+        try {
             Connection conn = Conexion.obtenerConexion();
-            //Ejecutamos la primera consulta
-            PreparedStatement pstmtCargos = conn.prepareStatement(sqlCargos);
-            ResultSet rsCargos = pstmtCargos.executeQuery();
-            while (rsCargos.next()){
-                int idCargo = rsCargos.getInt("id_cargo");
-                String nombreCargo = rsCargos.getString("Nombre_cargo");
-                Cargo cargo = new Cargo(idCargo, nombreCargo);
-
-                //Preparamos la segunda consulta para buscar actividades de ESTE cargo en especiífico
-                PreparedStatement pstmtActividades = conn.prepareStatement(sqlActividades);
-                pstmtActividades.setInt(1, idCargo);
-                ResultSet rsActividades = pstmtActividades.executeQuery();
-                while (rsActividades.next()){
-                    int idActividad = rsActividades.getInt("id_actividad");
-                    String descripcion = rsActividades.getString("descripcion");
-                    Actividad actividad = new Actividad(idActividad, idCargo, descripcion);
-                    cargo.getListaActividades().add(actividad);
-                }
-                rsActividades.close();
-                pstmtActividades.close();
-
-                listaCargos.add(cargo);
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery(sql);
+            while (rs.next()) {
+                lista.add(new Cargo(rs.getInt("id_cargo"), rs.getString("nombre_cargo")));
             }
+            rs.close();
+            st.close();
         } catch (SQLException e) {
-            System.err.println("Error al consultar los cargos y actividades: " + e.getMessage());
+            System.err.println("Error al obtener cargos: " + e.getMessage());
         }
-        return listaCargos;
+        return lista;
+    }
+
+    public boolean existe(String nombre) {
+        String sql = "SELECT COUNT(*) FROM tb_cargo WHERE LOWER(nombre_cargo) = LOWER(?)";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ResultSet rs = ps.executeQuery();
+            boolean existe = rs.next() && rs.getInt(1) > 0;
+            rs.close();
+            ps.close();
+            return existe;
+        } catch (SQLException e) {
+            System.err.println("Error al verificar cargo: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean crear(String nombre) {
+        String sql = "INSERT INTO tb_cargo (nombre_cargo) VALUES (?)";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ps.executeUpdate();
+            ps.close();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error al crear cargo: " + e.getMessage());
+        }
+        return false;
     }
 }
