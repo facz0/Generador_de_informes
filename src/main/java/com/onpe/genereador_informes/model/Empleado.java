@@ -5,6 +5,7 @@ public class Empleado {
     private String dni;
     private String nombres;
     private String apellidos;
+    private Odpe odpe;
 
     public Empleado(){}
 
@@ -45,6 +46,14 @@ public class Empleado {
 
     public void setApellidos(String apellidos) {
         this.apellidos = apellidos;
+    }
+
+    public Odpe getOdpe() {
+        return odpe;
+    }
+
+    public void setOdpe(Odpe odpe) {
+        this.odpe = odpe;
     }
 
     @Override

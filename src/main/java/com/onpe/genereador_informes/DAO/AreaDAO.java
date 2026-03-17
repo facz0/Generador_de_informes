@@ -3,41 +3,59 @@ package com.onpe.genereador_informes.DAO;
 import com.onpe.genereador_informes.database.Conexion;
 import com.onpe.genereador_informes.model.Area;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AreaDAO {
 
-    public List<Area> obtenerTodas(){
-        List<Area> listaAreas = new ArrayList<>();
-        String sql = "SELECT id_area, Nombre_area FROM Area";
-
+    public List<Area> obtenerTodas() {
+        List<Area> lista = new ArrayList<>();
+        String sql = "SELECT id_area, nombre_area FROM tb_area ORDER BY nombre_area";
         try {
-            // 3. Pedimos la conexión a nuestra clase experta
             Connection conn = Conexion.obtenerConexion();
-            // 4. PreparedStatement protege contra inyecciones SQL y prepara la consulta
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            // 5. ResultSet es la "tabla virtual" que nos devuelve la base de datos
-            ResultSet rs = pstmt.executeQuery();
-
-            // 6. Recorremos fila por fila mientras haya datos (rs.next())
-            while(rs.next()){
-                // Extraemos los datos de la fila actual
-                int id = rs.getInt("id_area");
-                String nombre = rs.getString("Nombre_area");
-
-                // ¡POO en acción! Creamos el objeto Area y lo añadimos a la lista
-                Area area = new Area(id, nombre);
-                listaAreas.add(area);
+            Statement st = conn.createStatement();
+            ResultSet rs = st.executeQuery(sql);
+            while (rs.next()) {
+                lista.add(new Area(rs.getInt("id_area"), rs.getString("nombre_area")));
             }
+            rs.close();
+            st.close();
         } catch (SQLException e) {
-            System.err.println("Error al consultar las áreas: " + e.getMessage());
+            System.err.println("Error al obtener áreas: " + e.getMessage());
         }
-        return listaAreas;
+        return lista;
     }
 
+    public boolean existe(String nombre) {
+        String sql = "SELECT COUNT(*) FROM tb_area WHERE LOWER(nombre_area) = LOWER(?)";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ResultSet rs = ps.executeQuery();
+            boolean existe = rs.next() && rs.getInt(1) > 0;
+            rs.close();
+            ps.close();
+            return existe;
+        } catch (SQLException e) {
+            System.err.println("Error al verificar área: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean crear(String nombre) {
+        String sql = "INSERT INTO tb_area (nombre_area) VALUES (?)";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ps.executeUpdate();
+            ps.close();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error al crear área: " + e.getMessage());
+        }
+        return false;
+    }
 }

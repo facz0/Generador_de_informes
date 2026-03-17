@@ -8,7 +8,7 @@ public class Conexion {
 
     // Atributo PRIVATE: Nadie fuera de esta clase puede tocar la conexión directamente (Encapsulamiento)
     private static Connection conexion = null;
-    private static final String URL = "jdbc:sqlite:Informes_BD.db";
+    private static final String URL = "jdbc:sqlite:db_informess.db";
 
     // Metodo PUBLIC: Es la única "puerta" para pedir la conexión
     public static Connection obtenerConexion() {

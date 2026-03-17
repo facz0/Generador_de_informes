@@ -3,11 +3,15 @@ package com.onpe.genereador_informes.servicios;
 import com.onpe.genereador_informes.model.Actividad;
 import com.onpe.genereador_informes.model.Contrato;
 import com.onpe.genereador_informes.model.Firma;
+import com.onpe.genereador_informes.database.Conexion;
 import org.apache.poi.xwpf.usermodel.*;
 import com.onpe.genereador_informes.DAO.FirmaDAO;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,29 +20,30 @@ import java.util.Locale;
 
 public class GeneradorWord {
     private FirmaDAO firmaDAO = new FirmaDAO();
+
+    private String[] obtenerEncargado() {
+        String[] datos = {"", ""}; // [0] = nombre, [1] = cargo
+        String sql = "SELECT nombre, cargo FROM tb_encargados WHERE id_encargado = 1";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                datos[0] = rs.getString("nombre");
+                datos[1] = rs.getString("cargo");
+            }
+            rs.close();
+            pstmt.close();
+        } catch (Exception e) {
+            System.err.println("Error al obtener encargado: " + e.getMessage());
+        }
+        return datos;
+    }
     public void generarDocumento(Contrato contrato, String rutaPlantilla, String rutaSalida){
         try{
             //Abrir el archivo
             FileInputStream fis = new FileInputStream(rutaPlantilla);
             XWPFDocument documento = new XWPFDocument(fis);
-
-            // ====================================================
-            // CÓDIGO DE DEPURACIÓN - Colócalo AQUÍ
-            // ====================================================
-            //System.out.println("=== PÁRRAFOS DEL DOCUMENTO (ANTES DE REEMPLAZOS) ===");
-            //int idxParrafo = 0;
-            //for (XWPFParagraph parrafo : documento.getParagraphs()) {
-            //    System.out.println("Párrafo " + idxParrafo + ": '" + parrafo.getText() + "'");
-            //    // Imprimir detalles de los runs
-            //    int idxRun = 0;
-            //    for (XWPFRun run : parrafo.getRuns()) {
-            //        String textoRun = run.getText(0) != null ? run.getText(0) : "[VACÍO]";
-            //        System.out.println("  Run " + idxRun++ + ": '" + textoRun + "'");
-            //    }
-            //    idxParrafo++;
-            //}
-            //System.out.println("==================================================");
-            // ====================================================
 
 
 
@@ -54,8 +59,9 @@ public class GeneradorWord {
                     actividades.add(a.getDescripcion());
                 }
             }
-            String descripcion_firma = "Gerente de la Gerencia de Gestión Electoral";
-            String nombreEncargado = "José Edilberto Samamé Blas";
+            String[] encargado = obtenerEncargado();
+            String descripcion_firma = encargado[1];
+            String nombreEncargado = encargado[0];
             String nombreEncargadoFM38 = nombreEncargado.toUpperCase();
             LocalDate hoy = LocalDate.now();
             Locale idiomaEspaniol = new Locale("es", "ES");
@@ -77,6 +83,14 @@ public class GeneradorWord {
             String periodo = "DEL " + inicioInforme.format(diaFmt) +
                     " AL " + finInforme.format(diaFmt) +
                     " " + finInforme.format(mesAnioFmt).toUpperCase();
+            
+            // Configurar ODPE
+            String descripcionOdpe = "";
+            String nombreOdpe = "";
+            if (contrato.getEmpleado().getOdpe() != null) {
+                descripcionOdpe = " en la ODPE";
+                nombreOdpe = " " + contrato.getEmpleado().getOdpe().getNombreOdpe();
+            }
 
             //informe actividades
             for (XWPFParagraph parrafo : documento.getParagraphs()) {
@@ -86,9 +100,13 @@ public class GeneradorWord {
                 reemplazarEnParrafo(parrafo, "{{CARGO}}", cargo);
                 reemplazarEnParrafo(parrafo, "{{NOMBRE_AREA}}", area);
                 reemplazarEnParrafo(parrafo, "{{PERIODO_PRESTACION}}", periodo);
-                reemplazarActividadesSeguro(documento, actividades);
                 reemplazarEnParrafo(parrafo, "{{DNI_EMPLEADO}}", dni);
+                reemplazarEnParrafo(parrafo, "{{DESCRIPCION}}", descripcionOdpe);
+                reemplazarEnParrafo(parrafo, "{{ODPE}}", nombreOdpe);
             }
+            
+            // Reemplazar actividades (solo una vez, fuera del loop)
+            reemplazarActividadesSeguro(documento, actividades);
 
             //fm38
             for (XWPFTable tabla : documento.getTables()) {
@@ -156,40 +174,64 @@ public class GeneradorWord {
 
     public void reemplazarActividadesSeguro(XWPFDocument doc, List<String> actividades) {
         String busqueda = "XXXACTIVIDADESXXX";
+        boolean encontrado = false;
 
-        // 1. Buscamos el párrafo exacto
-        XWPFParagraph parrafoObjetivo = null;
+        // 1. Buscar en párrafos principales del documento
         for (XWPFParagraph p : doc.getParagraphs()) {
             if (p.getText().contains(busqueda)) {
-                parrafoObjetivo = p;
+                inyectarActividades(p, actividades);
+                encontrado = true;
                 break;
             }
         }
 
-        if (parrafoObjetivo != null) {
-            // 2. Limpiamos absolutamente todo el contenido del párrafo
-            while (!parrafoObjetivo.getRuns().isEmpty()) {
-                parrafoObjetivo.removeRun(0);
-            }
-
-            // 3. Inyectamos las actividades una por una
-            for (int i = 0; i < actividades.size(); i++) {
-                XWPFRun run = parrafoObjetivo.createRun();
-                run.setText((i + 1) + ". " + actividades.get(i));
-
-                // Forzamos que sea visible: Negro, Arial, Tamaño 10
-                run.setColor("000000");
-                run.setFontFamily("Arial");
-                run.setFontSize(10);
-
-                // Si no es la última actividad, agregamos salto de línea
-                if (i < actividades.size() - 1) {
-                    run.addBreak();
+        // 2. Si no se encontró, buscar en tablas
+        if (!encontrado) {
+            for (XWPFTable tabla : doc.getTables()) {
+                for (XWPFTableRow fila : tabla.getRows()) {
+                    for (XWPFTableCell celda : fila.getTableCells()) {
+                        for (XWPFParagraph p : celda.getParagraphs()) {
+                            if (p.getText().contains(busqueda)) {
+                                inyectarActividades(p, actividades);
+                                encontrado = true;
+                                break;
+                            }
+                        }
+                        if (encontrado) break;
+                    }
+                    if (encontrado) break;
                 }
+                if (encontrado) break;
             }
-            System.out.println("✅ Inyección forzada completada para: " + busqueda);
-        } else {
-            System.out.println("❌ ERROR: No se encontró el tag XXXACTIVIDADESXXX en el documento.");
+        }
+
+        if (!encontrado) {
+            // Tag no encontrado, es normal en FM38
+        }
+    }
+
+    private void inyectarActividades(XWPFParagraph parrafo, List<String> actividades) {
+        // Limpiamos todo el contenido del párrafo
+        while (!parrafo.getRuns().isEmpty()) {
+            parrafo.removeRun(0);
+        }
+        
+        // Configurar alineación izquierda (más natural que justificado)
+        parrafo.setAlignment(ParagraphAlignment.LEFT);
+        parrafo.setSpacingBetween(1.15); // Interlineado de 1.15
+
+        // Inyectamos las actividades
+        for (int i = 0; i < actividades.size(); i++) {
+            XWPFRun run = parrafo.createRun();
+            run.setText((i + 1) + ". " + actividades.get(i));
+            run.setColor("000000");
+            run.setFontFamily("Arial");
+            run.setFontSize(10);
+
+            // Agregar salto de línea entre actividades (excepto la última)
+            if (i < actividades.size() - 1) {
+                run.addBreak();
+            }
         }
     }
 }

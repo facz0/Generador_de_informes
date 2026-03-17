@@ -16,125 +16,184 @@ import java.util.List;
 
 public class DashboardView {
     private DashboardController controlador;
+    private BorderPane contenidoCentral;
 
-     public DashboardView(){
-         this.controlador = new DashboardController();
-     }
+    static final String COLOR_MENU = "#1D2B61";
+    static final String COLOR_HOVER = "#2a3d8f";
+    static final String COLOR_SECCION = "#162050";
+    static final String ESTILO_BTN = "-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-font-size: 13px; -fx-alignment: BASELINE_LEFT; -fx-padding: 8 16 8 32; -fx-cursor: hand;";
+    static final String ESTILO_BTN_HOVER = "-fx-background-color: #2a3d8f; -fx-text-fill: white; -fx-font-size: 13px; -fx-alignment: BASELINE_LEFT; -fx-padding: 8 16 8 32; -fx-cursor: hand;";
+    static final String ESTILO_SECCION = "-fx-background-color: transparent; -fx-text-fill: #a0aec0; -fx-font-size: 11px; -fx-alignment: BASELINE_LEFT; -fx-padding: 12 16 4 16; -fx-font-weight: bold;";
 
-     public  void mostrar(Stage stage){
-         BorderPane root = new BorderPane();
+    public DashboardView() {
+        this.controlador = new DashboardController();
+    }
 
-         //Menu
-         VBox menuLateral = new VBox(20);
-         menuLateral.setPrefWidth(280);
-         menuLateral.setPadding(new Insets(20));
-         menuLateral.setStyle("-fx-background-color: #2c3e50;");
+    public void mostrar(Stage stage) {
+        BorderPane root = new BorderPane();
 
-         Label lblPerfil = new Label("Bienvenid@ Admin");
-         lblPerfil.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+        // ===== MENÚ LATERAL =====
+        VBox menuLateral = new VBox(0);
+        menuLateral.setPrefWidth(220);
+        menuLateral.setStyle("-fx-background-color: " + COLOR_MENU + ";");
 
-         //botones del menu
-         String estilobtnMenu = "-fx-background-color: transparent; -fx-text-fill: #ecf0f1; -fx-font-size: 14px; -fx-alignment: BASELINE_LEFT;";
+        VBox header = new VBox(4);
+        header.setPadding(new Insets(24, 16, 20, 16));
+        header.setStyle("-fx-background-color: " + COLOR_SECCION + ";");
+        Label lblTitulo = new Label("GGE");
+        lblTitulo.setStyle("-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;");
+        Label lblSubtitulo = new Label("Generador de Informes");
+        lblSubtitulo.setStyle("-fx-text-fill: #a0aec0; -fx-font-size: 11px;");
+        header.getChildren().addAll(lblTitulo, lblSubtitulo);
 
-         Button btnCrearColab = new Button("Crear Colaborador");
-         btnCrearColab.setStyle(estilobtnMenu);
-         btnCrearColab.setMaxWidth(Double.MAX_VALUE);
+        Label lblReportes = new Label("REPORTES");
+        lblReportes.setStyle(ESTILO_SECCION);
+        lblReportes.setMaxWidth(Double.MAX_VALUE);
 
-         Button btnEditarColab = new Button("Editar Colaborador");
-         btnEditarColab.setStyle(estilobtnMenu);
-         btnEditarColab.setMaxWidth(Double.MAX_VALUE);
+        Button btnInformes = crearBotonMenu("📄  Informes de Actividades");
+        Button btnFM38 = crearBotonMenu("📋  Formularios FM38");
 
-         Button btnCargosActividades = new Button("Configurar Cargos y Actividades");
-         btnCargosActividades.setStyle(estilobtnMenu);
-         btnCargosActividades.setMaxWidth(Double.MAX_VALUE);
+        Label lblMantenimiento = new Label("MANTENIMIENTO");
+        lblMantenimiento.setStyle(ESTILO_SECCION);
+        lblMantenimiento.setMaxWidth(Double.MAX_VALUE);
 
-         Region spacerMenu = new Region();
-         VBox.setVgrow(spacerMenu, Priority.ALWAYS);
+        Button btnCargos = crearBotonMenu("🗂️  Cargos y Áreas");
+        Button btnEmpleados = crearBotonMenu("👥  Empleados");
+        Button btnActividades = crearBotonMenu("📝  Actividades");
 
-         Button btnCerrarSesion = new Button("Cerrar Sesión");
-         btnCerrarSesion.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold;");
-         btnCerrarSesion.setMaxWidth(Double.MAX_VALUE);
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
 
-         menuLateral.getChildren().addAll(lblPerfil, new Separator(), btnCrearColab, btnEditarColab, btnCargosActividades, spacerMenu, btnCerrarSesion);
-         //manda el menú lateral a la izquierda del contenedor
-         root.setLeft(menuLateral);
+        Button btnCerrar = new Button("Cerrar Sesión");
+        btnCerrar.setMaxWidth(Double.MAX_VALUE);
+        btnCerrar.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 10; -fx-cursor: hand;");
+        VBox.setMargin(btnCerrar, new Insets(0, 16, 16, 16));
 
-         //CONTENIDO CENTRAL
-         BorderPane contenidoDerecho = new BorderPane();
+        menuLateral.getChildren().addAll(header, lblReportes, btnInformes, btnFM38, lblMantenimiento, btnCargos, btnEmpleados, btnActividades, spacer, btnCerrar);
+        root.setLeft(menuLateral);
 
-         //Arriba: Barra de busqueda
-         HBox topBar = new HBox(20); //Hbox apila de derecha a izquierda
-         topBar.setPadding(new Insets(15));
-         topBar.setAlignment(Pos.CENTER_RIGHT);
+        contenidoCentral = new BorderPane();
+        contenidoCentral.setStyle("-fx-background-color: #f4f6f9;");
+        mostrarVistaInformes();
+        root.setCenter(contenidoCentral);
 
-         TextField txtBuscar = new TextField();
-         txtBuscar.setPromptText("Buscar por dni o apellido");
-         topBar.getChildren().add(txtBuscar);
+        btnInformes.setOnAction(e -> mostrarVistaInformes());
+        btnFM38.setOnAction(e -> mostrarVistaFM38());
+        btnCargos.setOnAction(e -> new CargosView(contenidoCentral).mostrar());
+        btnEmpleados.setOnAction(e -> new EmpleadosView(contenidoCentral).mostrar());
+        btnActividades.setOnAction(e -> new ActividadesView(contenidoCentral).mostrar());
 
-         contenidoDerecho.setTop(topBar);
+        Scene scene = new Scene(root, 1100, 650);
+        stage.setTitle("Generador de Informes - GGE");
+        stage.setScene(scene);
+        stage.show();
+    }
 
-         //Centro: Tabla
-         TableView<Contrato> tabla =  new TableView<>();
+    private void mostrarVistaInformes() {
+        contenidoCentral.setTop(crearHeader("Informes de Actividades", "Genera los informes de actividades para todos los colaboradores"));
+        TableView<Contrato> tabla = crearTablaContratos();
+        VBox centro = new VBox(16);
+        centro.setPadding(new Insets(20, 24, 20, 24));
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+        centro.getChildren().add(tabla);
+        contenidoCentral.setCenter(centro);
 
-         TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
-         colNombre.setPrefWidth(300);
-         colNombre.setCellValueFactory(cell -> new SimpleStringProperty(
-                 cell.getValue().getEmpleado().getNombres() + " " + cell.getValue().getEmpleado().getApellidos()
-         ));
+        HBox bottomBar = new HBox(12);
+        bottomBar.setPadding(new Insets(16, 24, 16, 24));
+        bottomBar.setAlignment(Pos.CENTER_RIGHT);
+        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
+        Button btnGenerar = crearBotonAccion("Generar Informes", "#27ae60");
+        btnGenerar.setOnAction(e -> controlador.generarSoloInformesActividades());
+        bottomBar.getChildren().add(btnGenerar);
+        contenidoCentral.setBottom(bottomBar);
+    }
 
-         TableColumn<Contrato, String> colCargo = new TableColumn<>("Cargo");
-         colCargo.setPrefWidth(250);
-         colCargo.setCellValueFactory(cell -> new SimpleStringProperty(
-                 cell.getValue().getCargo().getNombreCargo()
-         ));
-         tabla.getColumns().addAll(colNombre, colCargo);
-         try{
-             List<Contrato> listaContratos  = controlador.obtenerDatosParaTabla();
-             ObservableList<Contrato> datos = FXCollections.observableArrayList(listaContratos);
-             tabla.setItems(datos);
-         } catch (Exception e){
-             System.out.println("Error cargando la tabla: " + e.getMessage());
-         }
-         contenidoDerecho.setCenter(tabla);
+    private void mostrarVistaFM38() {
+        contenidoCentral.setTop(crearHeader("Formularios FM38", "Genera los formularios FM38 para todos los colaboradores"));
+        TableView<Contrato> tabla = crearTablaContratos();
+        VBox centro = new VBox(16);
+        centro.setPadding(new Insets(20, 24, 20, 24));
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+        centro.getChildren().add(tabla);
+        contenidoCentral.setCenter(centro);
 
-         //Botones
-         HBox bottomBar = new HBox(20);
-         bottomBar.setPadding(new Insets(20));
-         bottomBar.setAlignment(Pos.CENTER);
+        HBox bottomBar = new HBox(12);
+        bottomBar.setPadding(new Insets(16, 24, 16, 24));
+        bottomBar.setAlignment(Pos.CENTER_RIGHT);
+        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
+        Button btnGenerar = crearBotonAccion("Generar FM38", "#2980b9");
+        btnGenerar.setOnAction(e -> controlador.generarSoloFM38());
+        bottomBar.getChildren().add(btnGenerar);
+        contenidoCentral.setBottom(bottomBar);
+    }
 
-         Button btnInforme = new Button("Generar Informe de Actividades");
-         btnInforme.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10px 20px; -fx-font-weight: bold;");
-         btnInforme.setOnAction(e -> {
-             controlador.generarTodosLosInformes();
-             //Contrato seleccionado = tabla.getSelectionModel().getSelectedItem();
-             //if(seleccionado != null){
-             //    controlador.generarInformeActividades(seleccionado);
-             //} else {
-             //    System.out.println("⚠️ Por favor, selecciona un colaborador de la tabla primero.");
-             //}
-         });
+    private void mostrarVistaPendiente(String mensaje) {
+        contenidoCentral.setTop(null);
+        contenidoCentral.setBottom(null);
+        StackPane pane = new StackPane();
+        pane.setStyle("-fx-background-color: #f4f6f9;");
+        Label lbl = new Label("🚧  " + mensaje);
+        lbl.setStyle("-fx-font-size: 16px; -fx-text-fill: #a0aec0;");
+        pane.getChildren().add(lbl);
+        contenidoCentral.setCenter(pane);
+    }
 
-         Button btnFm38 = new Button("Generar FM38");
-         btnFm38.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-padding: 10px 20px; -fx-font-weight: bold;");
-         btnFm38.setOnAction(e -> {
-             Contrato seleccionado = tabla.getSelectionModel().getSelectedItem();
-             if (seleccionado != null) {
-                 controlador.generarfm38(seleccionado);
-             } else {
-                 System.out.println("⚠️ Por favor, selecciona un colaborador de la tabla primero.");
-             }
-         });
+    private TableView<Contrato> crearTablaContratos() {
+        TableView<Contrato> tabla = new TableView<>();
+        tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
 
+        TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
+        colNombre.setPrefWidth(280);
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getEmpleado().getApellidos() + " " + cell.getValue().getEmpleado().getNombres()));
 
-         bottomBar.getChildren().addAll(btnInforme, btnFm38);
-         contenidoDerecho.setBottom(bottomBar);
+        TableColumn<Contrato, String> colDni = new TableColumn<>("DNI");
+        colDni.setPrefWidth(100);
+        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getDni()));
 
-         root.setCenter(contenidoDerecho);
-         Scene scene = new Scene(root, 1000,600);
-         stage.setTitle("Generador de indormes - GGE");
-         stage.setScene(scene);
-         stage.show();
+        TableColumn<Contrato, String> colCargo = new TableColumn<>("Cargo");
+        colCargo.setPrefWidth(250);
+        colCargo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getCargo().getNombreCargo()));
 
+        TableColumn<Contrato, String> colArea = new TableColumn<>("Gerencia");
+        colArea.setPrefWidth(200);
+        colArea.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getArea().getNombreArea()));
 
-     }
+        tabla.getColumns().addAll(colNombre, colDni, colCargo, colArea);
+
+        try {
+            List<Contrato> lista = controlador.obtenerDatosParaTabla();
+            tabla.setItems(FXCollections.observableArrayList(lista));
+        } catch (Exception e) {
+            System.out.println("Error cargando tabla: " + e.getMessage());
+        }
+        return tabla;
+    }
+
+    static VBox crearHeader(String titulo, String subtitulo) {
+        VBox header = new VBox(4);
+        header.setPadding(new Insets(24, 24, 16, 24));
+        header.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0;");
+        Label lblTitulo = new Label(titulo);
+        lblTitulo.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1D2B61;");
+        Label lblSub = new Label(subtitulo);
+        lblSub.setStyle("-fx-font-size: 12px; -fx-text-fill: #718096;");
+        header.getChildren().addAll(lblTitulo, lblSub);
+        return header;
+    }
+
+    static Button crearBotonAccion(String texto, String color) {
+        Button btn = new Button(texto);
+        btn.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-padding: 10 24; -fx-font-weight: bold; -fx-font-size: 13px; -fx-cursor: hand; -fx-background-radius: 6;");
+        return btn;
+    }
+
+    private Button crearBotonMenu(String texto) {
+        Button btn = new Button(texto);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setStyle(ESTILO_BTN);
+        btn.setOnMouseEntered(e -> btn.setStyle(ESTILO_BTN_HOVER));
+        btn.setOnMouseExited(e -> btn.setStyle(ESTILO_BTN));
+        return btn;
+    }
 }
