@@ -86,6 +86,7 @@ public class DashboardView {
         Scene scene = new Scene(root, 1100, 650);
         stage.setTitle("Generador de Informes - GGE");
         stage.setScene(scene);
+        stage.setMaximized(true);
         stage.show();
     }
 

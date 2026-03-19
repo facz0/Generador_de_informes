@@ -152,26 +152,6 @@ public class GeneradorWord {
         }
     }
 
-    //private void reemplazarListaParrafo(XWPFParagraph parrafo, String buscar, List<String> actividades){
-    //    if (actividades == null || actividades.isEmpty()) return;
-    //    List<XWPFRun> runs = parrafo.getRuns();
-    //    if (runs != null){
-    //        for (XWPFRun run : runs){
-    //            String texto = run.getText(0);
-    //            if (texto != null){
-    //                texto = texto.replace(buscar, "");
-    //                run.setText(texto, 0);
-    //                for (int i = 0; i < actividades.size(); i++){
-    //                    run.setText(String.valueOf(i + 1) + ".-" + actividades.get(i));
-    //                    if (i < actividades.size() - 1){
-    //                        run.addBreak();
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
     public void reemplazarActividadesSeguro(XWPFDocument doc, List<String> actividades) {
         String busqueda = "XXXACTIVIDADESXXX";
         boolean encontrado = false;

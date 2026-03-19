@@ -19,8 +19,13 @@ public class PersonalDAO {
                 "INNER JOIN tb_cargo cg ON ca.id_cargo = cg.id_cargo " +
                 "INNER JOIN tb_area a ON ca.id_area = a.id_area " +
                 "INNER JOIN tb_gerencia g ON p.id_gerencia = g.id_gerencia " +
-                "INNER JOIN tb_contratos c ON p.id_contrato = c.id_contrato " +
                 "LEFT JOIN tb_odpe o ON p.id_odpe = o.id_odpe " +
+                "LEFT JOIN (" +
+                "    SELECT id_personal, MAX(id_contrato) as ultimo_contrato " +
+                "    FROM tb_contratos GROUP BY id_personal" +
+                ")" +
+                " ultimos ON p.id_personal = ultimos.id_personal " +
+                "LEFT JOIN tb_contratos c ON ultimos.ultimo_contrato = c.id_contrato " +
                 "ORDER BY p.apellido";
         try {
             Connection conn = Conexion.obtenerConexion();
@@ -37,8 +42,8 @@ public class PersonalDAO {
                     rs.getString("nombre_area"),
                     rs.getString("nombre_gerencia"),
                     rs.getString("nombre_odpe") != null ? rs.getString("nombre_odpe") : "",
-                    rs.getString("numero_contrato"),
-                    rs.getString("fecha_inicio"),
+                    rs.getString("numero_contrato") != null ? rs.getString("numero_contrato") : "SIN CONTRATO",
+                    rs.getString("fecha_inicio") != null ? rs.getString("fecha_inicio") : "",
                     rs.getString("fecha_fin") != null ? rs.getString("fecha_fin") : ""
                 });
             }
@@ -58,34 +63,35 @@ public class PersonalDAO {
         try {
             conn.setAutoCommit(false);
 
-            // 1. Insertar contrato
-            PreparedStatement psContrato = conn.prepareStatement(
-                "INSERT INTO tb_contratos (numero_contrato, fecha_inicio, fecha_fin) VALUES (?, ?, ?)",
-                Statement.RETURN_GENERATED_KEYS);
-            psContrato.setString(1, numeroContrato);
-            psContrato.setString(2, fechaInicio);
-            psContrato.setString(3, fechaFin.isEmpty() ? null : fechaFin);
-            psContrato.executeUpdate();
-
-            ResultSet keys = psContrato.getGeneratedKeys();
-            int idContrato = keys.next() ? keys.getInt(1) : -1;
-            psContrato.close();
-
-            if (idContrato == -1) { conn.rollback(); return false; }
-
-            // 2. Insertar personal
+            // 1. Insertar personal
             PreparedStatement psPersonal = conn.prepareStatement(
-                "INSERT INTO tb_personal (dni, nombre, apellido, id_cargo_area, id_gerencia, id_odpe, id_contrato, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    "INSERT INTO tb_personal (dni, nombre, apellido, id_cargo_area, id_gerencia, id_odpe, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS);
             psPersonal.setString(1, dni);
             psPersonal.setString(2, nombre);
             psPersonal.setString(3, apellido);
             psPersonal.setInt(4, idCargoArea);
             psPersonal.setInt(5, idGerencia);
             if (idOdpe != null) psPersonal.setInt(6, idOdpe); else psPersonal.setNull(6, Types.INTEGER);
-            psPersonal.setInt(7, idContrato);
-            psPersonal.setString(8, estado);
+            psPersonal.setString(7, estado);
             psPersonal.executeUpdate();
+
+            ResultSet keys = psPersonal.getGeneratedKeys();
+            int idPersonal = keys.next() ? keys.getInt(1) : -1;
             psPersonal.close();
+
+            if (idPersonal == -1){ conn.rollback(); return false; }
+
+            //2. Insertar contrato
+            PreparedStatement psContrato = conn.prepareStatement(
+                "INSERT INTO tb_contratos (numero_contrato, fecha_inicio, fecha_fin, id_perosnal) VALUES (?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS);
+            psContrato.setString(1, numeroContrato);
+            psContrato.setString(2, fechaInicio);
+            psContrato.setString(3, fechaFin.isEmpty() ? null : fechaFin);
+            psContrato.setInt(4, idPersonal);
+            psContrato.executeUpdate();
+            psContrato.close();
 
             conn.commit();
             return true;
@@ -107,7 +113,9 @@ public class PersonalDAO {
             conn.setAutoCommit(false);
 
             // Obtener id_contrato del personal
-            PreparedStatement psGet = conn.prepareStatement("SELECT id_contrato FROM tb_personal WHERE id_personal = ?");
+            PreparedStatement psGet = conn.prepareStatement(
+                    "SELECT id_contrato FROM tb_contratos WHERE id_personal = ? ORDER BY id_contrato DESC LIMIT 1"
+            );
             psGet.setInt(1, idPersonal);
             ResultSet rs = psGet.executeQuery();
             int idContrato = rs.next() ? rs.getInt("id_contrato") : -1;
@@ -155,23 +163,16 @@ public class PersonalDAO {
         try {
             conn.setAutoCommit(false);
 
-            PreparedStatement psGet = conn.prepareStatement("SELECT id_contrato FROM tb_personal WHERE id_personal = ?");
-            psGet.setInt(1, idPersonal);
-            ResultSet rs = psGet.executeQuery();
-            int idContrato = rs.next() ? rs.getInt("id_contrato") : -1;
-            psGet.close();
+            PreparedStatement psContrato = conn.prepareStatement("DELETE FROM tb_contratos WHERE id_personal = ?");
+            psContrato.setInt(1, idPersonal);
+            psContrato.executeUpdate();
+
+            psContrato.close();
 
             PreparedStatement psPersonal = conn.prepareStatement("DELETE FROM tb_personal WHERE id_personal = ?");
             psPersonal.setInt(1, idPersonal);
             psPersonal.executeUpdate();
             psPersonal.close();
-
-            if (idContrato != -1) {
-                PreparedStatement psContrato = conn.prepareStatement("DELETE FROM tb_contratos WHERE id_contrato = ?");
-                psContrato.setInt(1, idContrato);
-                psContrato.executeUpdate();
-                psContrato.close();
-            }
 
             conn.commit();
             return true;

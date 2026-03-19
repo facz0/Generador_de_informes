@@ -20,21 +20,17 @@ public class DashboardController {
     public List<Contrato> obtenerDatosParaTabla(){
         return contratoDao.obtenerContratos();
     }
-
-    public void generarInformeActividades(Contrato contratoSeleccionado){
-
-    }
-
-    public void generarfm38(Contrato contratoSeleccionado){
-
-    }
     
     // Generar solo Informes de Actividades
     public void generarSoloInformesActividades() {
         String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
-        String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
-        String carpetaDestino = "C:/Users/inesq/Documents/informess/";
+        //String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
+        //String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
+        //String carpetaDestino = "C:/Users/inesq/Documents/informess/";
+
+        String carpetaTempWord = "C:/Users/fcossio/Documents/Informes_Lurin/temp/words";
+        String carpetaTempPdf = "C:/Users/fcossio/Documents/Informes_Lurin/temp/pdfs";
+        String carpetaDestino = "C:/Users/fcossio/Documents/Informes_Lurin/";
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();

@@ -67,8 +67,18 @@ public class ActividadesView {
 
         // ===== TABLA =====
         TableColumn<Actividad, String> colId = new TableColumn<>("#");
-        colId.setPrefWidth(50);
-        colId.setCellValueFactory(c -> new SimpleStringProperty(String.valueOf(c.getValue().getIdActividad())));
+        colId.setPrefWidth(150);
+        colId.setCellFactory(col -> new TableCell<Actividad, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
+        });
 
         TableColumn<Actividad, String> colDesc = new TableColumn<>("Descripción");
         colDesc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDescripcion()));

@@ -22,6 +22,7 @@ public class ActividadDAO {
             }
             rs.close();
             ps.close();
+            conn.close();
         } catch (SQLException e) {
             System.err.println("Error al obtener actividades: " + e.getMessage());
         }

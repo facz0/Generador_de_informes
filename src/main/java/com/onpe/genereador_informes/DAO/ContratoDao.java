@@ -18,6 +18,7 @@ import java.util.List;
 
 public class ContratoDao {
 
+    //Metodo para cargar las actividades
     private List<Actividad> obtenerActividadesPorCargoArea(int idCargoArea) {
         List<Actividad> actividades = new ArrayList<>();
         String sql = "SELECT id_actividad, descripcion FROM tb_actividades WHERE id_cargo_area = ?";
@@ -48,7 +49,12 @@ public class ContratoDao {
                 "o.nombre_odpe, " +
                 "g.id_gerencia, g.nombre_gerencia " +
                 "FROM tb_contratos c " +
-                "INNER JOIN tb_personal p ON c.id_contrato = p.id_contrato " +
+                "INNER JOIN ( " +
+                "    SELECT id_personal, MAX(id_contrato) as ultimo_contrato " +
+                "    FROM tb_contratos " +
+                "    GROUP BY id_personal " +
+                ") ultimos ON c.id_contrato = ultimos.ultimo_contrato " +
+                "INNER JOIN tb_personal p ON c.id_personal = p.id_personal " +
                 "INNER JOIN tb_cargo_area ca ON p.id_cargo_area = ca.id_cargo_area " +
                 "INNER JOIN tb_cargo cg ON ca.id_cargo = cg.id_cargo " +
                 "INNER JOIN tb_area a ON ca.id_area = a.id_area " +
