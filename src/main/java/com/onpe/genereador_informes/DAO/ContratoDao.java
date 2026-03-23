@@ -103,6 +103,7 @@ public class ContratoDao {
                 contrato.setEmpleado(empleado);
                 contrato.setCargo(cargo);
                 contrato.setArea(area);
+                contrato.setIdCargoArea(idCargoArea);
 
                 listaContratos.add(contrato);
             }

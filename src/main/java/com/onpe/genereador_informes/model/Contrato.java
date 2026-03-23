@@ -12,6 +12,7 @@ public class Contrato {
     private Empleado empleado;
     private Cargo cargo;
     private Area area;
+    private int idCargoArea;
 
     public Contrato (){}
 
@@ -89,6 +90,14 @@ public class Contrato {
 
     public void setArea(Area area) {
         this.area = area;
+    }
+
+    public int getIdCargoArea() {
+        return idCargoArea;
+    }
+
+    public void setIdCargoArea(int idCargoArea) {
+        this.idCargoArea = idCargoArea;
     }
 
     @Override

@@ -1,18 +1,11 @@
 package com.onpe.genereador_informes.vista;
 
 import com.onpe.genereador_informes.controlador.DashboardController;
-import com.onpe.genereador_informes.model.Contrato;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-
-import java.util.List;
 
 public class DashboardView {
     private DashboardController controlador;
@@ -32,7 +25,6 @@ public class DashboardView {
     public void mostrar(Stage stage) {
         BorderPane root = new BorderPane();
 
-        // ===== MENÚ LATERAL =====
         VBox menuLateral = new VBox(0);
         menuLateral.setPrefWidth(220);
         menuLateral.setStyle("-fx-background-color: " + COLOR_MENU + ";");
@@ -52,14 +44,15 @@ public class DashboardView {
 
         Button btnInformes = crearBotonMenu("📄  Informes de Actividades");
         Button btnFM38 = crearBotonMenu("📋  Formularios FM38");
+        Button btnSudime = crearBotonMenu("🗳️  SUDIME");
 
         Label lblMantenimiento = new Label("MANTENIMIENTO");
         lblMantenimiento.setStyle(ESTILO_SECCION);
         lblMantenimiento.setMaxWidth(Double.MAX_VALUE);
 
-        Button btnCargos = crearBotonMenu("🗂️  Cargos y Áreas");
-        Button btnEmpleados = crearBotonMenu("👥  Empleados");
-        Button btnActividades = crearBotonMenu("📝  Actividades");
+        Button btnCargos = crearBotonMenu(" Cargos y Áreas");
+        Button btnEmpleados = crearBotonMenu(" Empleados");
+        Button btnActividades = crearBotonMenu("Actividades");
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -69,16 +62,18 @@ public class DashboardView {
         btnCerrar.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 10; -fx-cursor: hand;");
         VBox.setMargin(btnCerrar, new Insets(0, 16, 16, 16));
 
-        menuLateral.getChildren().addAll(header, lblReportes, btnInformes, btnFM38, lblMantenimiento, btnCargos, btnEmpleados, btnActividades, spacer, btnCerrar);
+        menuLateral.getChildren().addAll(header, lblReportes, btnInformes, btnFM38, btnSudime, lblMantenimiento, btnCargos, btnEmpleados, btnActividades, spacer, btnCerrar);
         root.setLeft(menuLateral);
 
         contenidoCentral = new BorderPane();
         contenidoCentral.setStyle("-fx-background-color: #f4f6f9;");
-        mostrarVistaInformes();
+        new InformesView(contenidoCentral, controlador).mostrar();
         root.setCenter(contenidoCentral);
 
-        btnInformes.setOnAction(e -> mostrarVistaInformes());
-        btnFM38.setOnAction(e -> mostrarVistaFM38());
+        btnCerrar.setOnAction(e -> stage.close());
+        btnInformes.setOnAction(e -> new InformesView(contenidoCentral, controlador).mostrar());
+        btnFM38.setOnAction(e -> new FM38View(contenidoCentral, controlador).mostrar());
+        btnSudime.setOnAction(e -> new SudimeView(contenidoCentral, controlador).mostrar());
         btnCargos.setOnAction(e -> new CargosView(contenidoCentral).mostrar());
         btnEmpleados.setOnAction(e -> new EmpleadosView(contenidoCentral).mostrar());
         btnActividades.setOnAction(e -> new ActividadesView(contenidoCentral).mostrar());
@@ -88,87 +83,6 @@ public class DashboardView {
         stage.setScene(scene);
         stage.setMaximized(true);
         stage.show();
-    }
-
-    private void mostrarVistaInformes() {
-        contenidoCentral.setTop(crearHeader("Informes de Actividades", "Genera los informes de actividades para todos los colaboradores"));
-        TableView<Contrato> tabla = crearTablaContratos();
-        VBox centro = new VBox(16);
-        centro.setPadding(new Insets(20, 24, 20, 24));
-        VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().add(tabla);
-        contenidoCentral.setCenter(centro);
-
-        HBox bottomBar = new HBox(12);
-        bottomBar.setPadding(new Insets(16, 24, 16, 24));
-        bottomBar.setAlignment(Pos.CENTER_RIGHT);
-        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
-        Button btnGenerar = crearBotonAccion("Generar Informes", "#27ae60");
-        btnGenerar.setOnAction(e -> controlador.generarSoloInformesActividades());
-        bottomBar.getChildren().add(btnGenerar);
-        contenidoCentral.setBottom(bottomBar);
-    }
-
-    private void mostrarVistaFM38() {
-        contenidoCentral.setTop(crearHeader("Formularios FM38", "Genera los formularios FM38 para todos los colaboradores"));
-        TableView<Contrato> tabla = crearTablaContratos();
-        VBox centro = new VBox(16);
-        centro.setPadding(new Insets(20, 24, 20, 24));
-        VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().add(tabla);
-        contenidoCentral.setCenter(centro);
-
-        HBox bottomBar = new HBox(12);
-        bottomBar.setPadding(new Insets(16, 24, 16, 24));
-        bottomBar.setAlignment(Pos.CENTER_RIGHT);
-        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
-        Button btnGenerar = crearBotonAccion("Generar FM38", "#2980b9");
-        btnGenerar.setOnAction(e -> controlador.generarSoloFM38());
-        bottomBar.getChildren().add(btnGenerar);
-        contenidoCentral.setBottom(bottomBar);
-    }
-
-    private void mostrarVistaPendiente(String mensaje) {
-        contenidoCentral.setTop(null);
-        contenidoCentral.setBottom(null);
-        StackPane pane = new StackPane();
-        pane.setStyle("-fx-background-color: #f4f6f9;");
-        Label lbl = new Label("🚧  " + mensaje);
-        lbl.setStyle("-fx-font-size: 16px; -fx-text-fill: #a0aec0;");
-        pane.getChildren().add(lbl);
-        contenidoCentral.setCenter(pane);
-    }
-
-    private TableView<Contrato> crearTablaContratos() {
-        TableView<Contrato> tabla = new TableView<>();
-        tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
-
-        TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
-        colNombre.setPrefWidth(280);
-        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(
-                cell.getValue().getEmpleado().getApellidos() + " " + cell.getValue().getEmpleado().getNombres()));
-
-        TableColumn<Contrato, String> colDni = new TableColumn<>("DNI");
-        colDni.setPrefWidth(100);
-        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getDni()));
-
-        TableColumn<Contrato, String> colCargo = new TableColumn<>("Cargo");
-        colCargo.setPrefWidth(250);
-        colCargo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getCargo().getNombreCargo()));
-
-        TableColumn<Contrato, String> colArea = new TableColumn<>("Gerencia");
-        colArea.setPrefWidth(200);
-        colArea.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getArea().getNombreArea()));
-
-        tabla.getColumns().addAll(colNombre, colDni, colCargo, colArea);
-
-        try {
-            List<Contrato> lista = controlador.obtenerDatosParaTabla();
-            tabla.setItems(FXCollections.observableArrayList(lista));
-        } catch (Exception e) {
-            System.out.println("Error cargando tabla: " + e.getMessage());
-        }
-        return tabla;
     }
 
     static VBox crearHeader(String titulo, String subtitulo) {
@@ -187,6 +101,14 @@ public class DashboardView {
         Button btn = new Button(texto);
         btn.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-padding: 10 24; -fx-font-weight: bold; -fx-font-size: 13px; -fx-cursor: hand; -fx-background-radius: 6;");
         return btn;
+    }
+
+    static void mostrarAlerta(String titulo, String mensaje) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(titulo);
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
     }
 
     private Button crearBotonMenu(String texto) {

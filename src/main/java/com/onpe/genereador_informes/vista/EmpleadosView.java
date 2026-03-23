@@ -26,6 +26,7 @@ public class EmpleadosView {
     private CargoAreaDAO cargoAreaDAO = new CargoAreaDAO();
     private ObservableList<String[]> datosTabla = FXCollections.observableArrayList();
     private TableView<String[]> tabla;
+    private PaginadorTabla<String[]> paginador;
 
     public EmpleadosView(BorderPane contenedor) {
         this.contenedor = contenedor;
@@ -57,6 +58,7 @@ public class EmpleadosView {
         tabla.setItems(datosTabla);
 
         tabla.getColumns().addAll(
+            PaginadorTabla.crearColumnaNumero(),
             col("DNI", 90, 1),
             col("Apellidos", 160, 3),
             col("Nombres", 160, 2),
@@ -74,12 +76,15 @@ public class EmpleadosView {
             }
         });
 
+        paginador = new PaginadorTabla<>(tabla, 20);
         cargarTabla();
+        paginador.setDatos(datosTabla);
 
         VBox centro = new VBox(0);
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(topBar, tabla);
-        VBox.setMargin(tabla, new Insets(0, 24, 16, 24));
+        centro.getChildren().addAll(topBar, tabla, paginador.getControles());
+        VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
+        VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
 
         contenedor.setCenter(centro);
 
@@ -282,7 +287,7 @@ public class EmpleadosView {
 
     private void cargarTabla() {
         datosTabla.setAll(personalDAO.obtenerTodos());
-        tabla.setItems(datosTabla);
+        if (paginador != null) paginador.setDatos(datosTabla);
     }
 
     private void cargarCombo(String sql, ObservableList<String[]> lista) {
