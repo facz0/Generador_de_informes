@@ -8,6 +8,9 @@ import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class DashboardController {
 
@@ -24,13 +27,11 @@ public class DashboardController {
     // Generar solo Informes de Actividades
     public void generarSoloInformesActividades(List<Contrato> listaContratos) {
         String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        //String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
-        //String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
-        //String carpetaDestino = "C:/Users/inesq/Documents/informess/";
-
-        String carpetaTempWord = "C:/Users/fcossio/Documents/Informes_Lurin/temp/words";
-        String carpetaTempPdf = "C:/Users/fcossio/Documents/Informes_Lurin/temp/pdfs";
-        String carpetaDestino = "C:/Users/fcossio/Documents/Informes_Lurin/";
+        String userHome = System.getProperty("user.home");
+        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generado_Informes" + File.separator;
+        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino = baseDir;
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
@@ -56,16 +57,19 @@ public class DashboardController {
         }
 
         System.out.println("Generando informe consolidado...");
-        unirPdfs(pdfsInformes, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - MARZO.pdf");
+        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
+        unirPdfs(pdfsInformes, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - " + mesActual + ".pdf");
         System.out.println("✅ Informes de Actividades generados correctamente");
     }
     
     // Generar solo FM38
     public void generarSoloFM38(List<Contrato> listaContratos) {
         String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
-        String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
-        String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
-        String carpetaDestino = "C:/Users/inesq/Documents/informess/";
+        String userHome = System.getProperty("user.home");
+        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generado_Informes" + File.separator;
+        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino = baseDir;
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
@@ -85,17 +89,20 @@ public class DashboardController {
             pdfsFM38.add(pdfFM);
         }
 
-        unirPdfs(pdfsFM38, carpetaDestino + "Formato_FM38/FORMATO fm38 - MARZO.pdf");
+        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
+        unirPdfs(pdfsFM38, carpetaDestino + "Formato_FM38/FORMATO fm38 - " + mesActual + ".pdf");
     }
 
     public void generarTodosLosInformes() {
         String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
         String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
         
-        String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
-        String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
-        String carpetaDestino = "C:/Users/inesq/Documents/informess/";
-        String carpetaSUDIME = "C:/Users/inesq/Documents/informess/SUDIME/";
+        String userHome = System.getProperty("user.home");
+        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generados" + File.separator;
+        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino = baseDir;
+        String carpetaSUDIME = baseDir + "SUDIME" + File.separator;
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
@@ -142,8 +149,9 @@ public class DashboardController {
         System.out.println("Generando informes consolidados SUDIME...");
 
         // 3. Unir en carpeta SUDIME
-        unirPdfs(pdfsInformes, carpetaSUDIME + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES - MARZO.pdf");
-        unirPdfs(pdfsFM38, carpetaSUDIME + "Formato_FM38/SUDIME - FORMATO fm38 - MARZO.pdf");
+        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
+        unirPdfs(pdfsInformes, carpetaSUDIME + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES - " + mesActual + ".pdf");
+        unirPdfs(pdfsFM38, carpetaSUDIME + "Formato_FM38/SUDIME - FORMATO fm38 - " + mesActual + ".pdf");
 
         System.out.println("PROCESO TERMINADO");
 

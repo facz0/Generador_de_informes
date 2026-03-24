@@ -65,7 +65,7 @@ public class PersonalDAO {
 
             // 1. Insertar personal
             PreparedStatement psPersonal = conn.prepareStatement(
-                    "INSERT INTO tb_personal (dni, nombre, apellido, id_cargo_area, id_gerencia, id_odpe, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO tb_personal (dni, nombre, apellido, id_cargo_area, id_gerencia, id_odpe, estado) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             psPersonal.setString(1, dni);
             psPersonal.setString(2, nombre);
@@ -84,7 +84,7 @@ public class PersonalDAO {
 
             //2. Insertar contrato
             PreparedStatement psContrato = conn.prepareStatement(
-                "INSERT INTO tb_contratos (numero_contrato, fecha_inicio, fecha_fin, id_perosnal) VALUES (?, ?, ?, ?)",
+                "INSERT INTO tb_contratos (numero_contrato, fecha_inicio, fecha_fin, id_personal) VALUES (?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS);
             psContrato.setString(1, numeroContrato);
             psContrato.setString(2, fechaInicio);

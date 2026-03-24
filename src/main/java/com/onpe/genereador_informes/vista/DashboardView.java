@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.concurrent.Task;
 
 public class DashboardView {
     private DashboardController controlador;
@@ -132,10 +133,15 @@ public class DashboardView {
         bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
         Button btnSeleccionarTodos = crearBotonAccion("Seleccionar Todos", "#27ae60");
         btnSeleccionarTodos.setOnAction(e -> {
-            boolean allSelected = tabla.getItems().stream()
-                    .allMatch(c -> selecciones.containsKey(c) && selecciones.get(c).get());
             for (Contrato c : tabla.getItems()) {
-                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(!allSelected);
+                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(true);
+            }
+        });
+
+        Button btnDeseleccionarTodos = crearBotonAccion("Deseleccionar Todos", "#c0392b");
+        btnDeseleccionarTodos.setOnAction(e -> {
+            for (Contrato c : tabla.getItems()) {
+                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(false);
             }
         });
 
@@ -146,13 +152,13 @@ public class DashboardView {
                     && "ACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
                     .collect(Collectors.toList());
             if (!seleccionados.isEmpty()) {
-                controlador.generarSoloInformesActividades(seleccionados);
+                ejecutarTareaConCarga("Generando Informes de Actividades", () -> controlador.generarSoloInformesActividades(seleccionados));
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Seleccione al menos un trabajador con el estado ACTIVO");
                 alert.show();
             }
         });
-        bottomBar.getChildren().addAll(btnSeleccionarTodos, btnGenerar);
+        bottomBar.getChildren().addAll(btnSeleccionarTodos, btnDeseleccionarTodos, btnGenerar);
         contenidoCentral.setBottom(bottomBar);
     }
 
@@ -185,10 +191,15 @@ public class DashboardView {
         bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
         Button btnSeleccionarTodos = crearBotonAccion("Seleccionar Todos", "#27ae60");
         btnSeleccionarTodos.setOnAction(e -> {
-            boolean allSelected = tabla.getItems().stream()
-                    .allMatch(c -> selecciones.containsKey(c) && selecciones.get(c).get());
             for (Contrato c : tabla.getItems()) {
-                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(!allSelected);
+                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(true);
+            }
+        });
+
+        Button btnDeseleccionarTodos = crearBotonAccion("Deseleccionar Todos", "#c0392b");
+        btnDeseleccionarTodos.setOnAction(e -> {
+            for (Contrato c : tabla.getItems()) {
+                selecciones.computeIfAbsent(c, k -> new SimpleBooleanProperty(false)).set(false);
             }
         });
 
@@ -199,14 +210,53 @@ public class DashboardView {
                     && "ACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
                     .collect(Collectors.toList());
             if (!seleccionados.isEmpty()) {
-                controlador.generarSoloFM38(seleccionados);
+                ejecutarTareaConCarga("Generando Formularios FM38", () -> controlador.generarSoloFM38(seleccionados));
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciones al menos un trabajador con el estado ACTIVO");
                 alert.show();
             }
         });
-        bottomBar.getChildren().addAll(btnSeleccionarTodos, btnGenerar);
+        bottomBar.getChildren().addAll(btnSeleccionarTodos, btnDeseleccionarTodos, btnGenerar);
         contenidoCentral.setBottom(bottomBar);
+    }
+
+    private void ejecutarTareaConCarga(String titulo, Runnable tarea) {
+        Alert loadingAlert = new Alert(Alert.AlertType.NONE);
+        loadingAlert.setTitle(titulo);
+        loadingAlert.setHeaderText("Generando documentos, por favor espere...");
+        ProgressIndicator progressIndicator = new ProgressIndicator();
+        loadingAlert.getDialogPane().setContent(progressIndicator);
+        loadingAlert.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        loadingAlert.getDialogPane().lookupButton(ButtonType.CANCEL).setVisible(false);
+
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                tarea.run();
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            loadingAlert.setResult(ButtonType.OK);
+            loadingAlert.close();
+            Alert exito = new Alert(Alert.AlertType.INFORMATION, "¡Proceso terminado con éxito!");
+            exito.show();
+        });
+
+        task.setOnFailed(e -> {
+            loadingAlert.setResult(ButtonType.OK);
+            loadingAlert.close();
+            Alert error = new Alert(Alert.AlertType.ERROR, "Ocurrió un error en la generación.");
+            error.show();
+            if (task.getException() != null) task.getException().printStackTrace();
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+
+        loadingAlert.showAndWait();
     }
 
     private void mostrarVistaPendiente(String mensaje) {
@@ -225,6 +275,41 @@ public class DashboardView {
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
         tabla.setEditable(true);
 
+        tabla.setRowFactory(tv -> {
+            return new TableRow<Contrato>() {
+                private javafx.beans.value.ChangeListener<Boolean> listener = (obs, oldVal, newVal) -> {
+                    if (newVal) {
+                        setStyle("-fx-background-color: #dbeafe;");
+                    } else {
+                        setStyle("");
+                    }
+                };
+                private BooleanProperty actProp;
+
+                @Override
+                protected void updateItem(Contrato item, boolean empty) {
+                    super.updateItem(item, empty);
+                    
+                    if (actProp != null) {
+                        actProp.removeListener(listener);
+                        actProp = null;
+                    }
+                    
+                    if (empty || item == null) {
+                        setStyle("");
+                    } else {
+                        actProp = selecciones.computeIfAbsent(item, k -> new SimpleBooleanProperty(false));
+                        actProp.addListener(listener);
+                        if (actProp.get()) {
+                            setStyle("-fx-background-color: #dbeafe;");
+                        } else {
+                            setStyle("");
+                        }
+                    }
+                }
+            };
+        });
+
         TableColumn<Contrato, String> colNum = new TableColumn<>("N°");
         colNum.prefWidthProperty().bind(tabla.widthProperty().multiply(0.04));
         colNum.setCellFactory(col -> new TableCell<Contrato, String>() {
@@ -239,45 +324,37 @@ public class DashboardView {
         colSeleccion.prefWidthProperty().bind(tabla.widthProperty().multiply(0.04));
         colSeleccion.setCellFactory(tc -> new TableCell<Contrato, Boolean>() {
             private final CheckBox checkBox = new CheckBox();
-            
+            private BooleanProperty currentProp;
+
+            {
+                checkBox.setOnAction(e -> {
+                    if (currentProp != null) {
+                        currentProp.set(checkBox.isSelected());
+                    }
+                });
+                setAlignment(Pos.CENTER);
+            }
+
             @Override
             protected void updateItem(Boolean item, boolean empty){
                 super.updateItem(item, empty);
+                
+                if (currentProp != null) {
+                    checkBox.selectedProperty().unbindBidirectional(currentProp);
+                    currentProp = null;
+                }
+                
                 if(empty || getTableRow() == null){
                     setGraphic(null);
-                    if(getTableRow() != null ) getTableRow().setStyle("");
                 } else {
                     Contrato contrato = getTableView().getItems().get(getIndex());
-                    BooleanProperty prop = selecciones.computeIfAbsent(contrato, k -> new SimpleBooleanProperty(false));
-                    
-                    // Unbind first to prevent multiple bindings if cell is reused
-                    checkBox.selectedProperty().unbindBidirectional(prop); 
-                    checkBox.setSelected(prop.get());
-                    checkBox.selectedProperty().bindBidirectional(prop);
-                    
-                    // Solo registrar el listener de fila si no se ha hecho antes
-                    if (getTableRow().getUserData() == null || !(boolean)getTableRow().getUserData()) {
-                        prop.addListener((obs, oldVal, newVal) -> {
-                            // Este listener funciona de manera segura
-                            if (getTableRow() != null) {
-                                if (newVal) {
-                                    getTableRow().setStyle("-fx-background-color: #dbeafe;"); 
-                                } else {
-                                    getTableRow().setStyle(""); 
-                                }
-                            }
-                        });
-                        getTableRow().setUserData(true);
+                    if (contrato == null) {
+                        setGraphic(null);
+                        return;
                     }
-                    
-                    if (prop.get()) {
-                        getTableRow().setStyle("-fx-background-color: #dbeafe;");
-                    } else {
-                        getTableRow().setStyle("");
-                    }
-
+                    currentProp = selecciones.computeIfAbsent(contrato, k -> new SimpleBooleanProperty(false));
+                    checkBox.selectedProperty().bindBidirectional(currentProp);
                     setGraphic(checkBox);
-                    setAlignment(Pos.CENTER);
                 }
             }
         });
