@@ -91,17 +91,19 @@ public class GeneradorWord {
                 nombreOdpe = " " + contrato.getPersonal().getOdpe().getNombreOdpe();
             }
 
+            boolean esInforme = rutaPlantilla != null && rutaPlantilla.toUpperCase().contains("INFORME");
+
             //informe actividades
             for (XWPFParagraph parrafo : documento.getParagraphs()) {
-                reemplazarEnParrafo(parrafo, "{{NOMBRE_ENCARGADO}}", nombreEncargado);
-                reemplazarEnParrafo(parrafo, "{{DESCRIPCION_FIRMA}}", descripcion_firma);
-                reemplazarEnParrafo(parrafo, "{{NOMBRE_EMPLEADO}}", nombreCompleto);
-                reemplazarEnParrafo(parrafo, "{{CARGO}}", cargo);
-                reemplazarEnParrafo(parrafo, "{{NOMBRE_AREA}}", area);
-                reemplazarEnParrafo(parrafo, "{{PERIODO_PRESTACION}}", periodo);
-                reemplazarEnParrafo(parrafo, "{{DNI_EMPLEADO}}", dni);
-                reemplazarEnParrafo(parrafo, "{{DESCRIPCION}}", descripcionOdpe);
-                reemplazarEnParrafo(parrafo, "{{ODPE}}", nombreOdpe);
+                reemplazarEnParrafo(parrafo, "{{NOMBRE_ENCARGADO}}", nombreEncargado, esInforme);
+                reemplazarEnParrafo(parrafo, "{{DESCRIPCION_FIRMA}}", descripcion_firma, esInforme);
+                reemplazarEnParrafo(parrafo, "{{NOMBRE_EMPLEADO}}", nombreCompleto, esInforme);
+                reemplazarEnParrafo(parrafo, "{{CARGO}}", cargo, esInforme);
+                reemplazarEnParrafo(parrafo, "{{NOMBRE_AREA}}", area, esInforme);
+                reemplazarEnParrafo(parrafo, "{{PERIODO_PRESTACION}}", periodo, esInforme);
+                reemplazarEnParrafo(parrafo, "{{DNI_EMPLEADO}}", dni, esInforme);
+                reemplazarEnParrafo(parrafo, "{{DESCRIPCION}}", descripcionOdpe, esInforme);
+                reemplazarEnParrafo(parrafo, "{{ODPE}}", nombreOdpe, esInforme);
             }
             
             // Reemplazar actividades (solo una vez, fuera del loop)
@@ -112,13 +114,13 @@ public class GeneradorWord {
                 for (XWPFTableRow fila : tabla.getRows()) {
                     for (XWPFTableCell celda : fila.getTableCells()) {
                         for (XWPFParagraph parrafo : celda.getParagraphs()) {
-                            reemplazarEnParrafo(parrafo, "{{NUMERO_CONTRATO}}", num_contrato);
-                            reemplazarEnParrafo(parrafo, "{{CARGO}}", cargo);
-                            reemplazarEnParrafo(parrafo, "{{NOMBRE_EMPLEADO}}", nombreCompleto);
-                            reemplazarEnParrafo(parrafo, "{{PERIODO_PRESTACION}}", periodo);
-                            reemplazarEnParrafo(parrafo, "{{NOMBRE_ENCARGADO}}", nombreEncargadoFM38);
-                            reemplazarEnParrafo(parrafo, "{{DESCRIPCION_FIRMA}}", descripcion_firma);
-                            reemplazarEnParrafo(parrafo, "{{FECHA_ANIO_ACTUAL}}", mesAnio);
+                            reemplazarEnParrafo(parrafo, "{{NUMERO_CONTRATO}}", num_contrato, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{CARGO}}", cargo, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{NOMBRE_EMPLEADO}}", nombreCompleto, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{PERIODO_PRESTACION}}", periodo, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{NOMBRE_ENCARGADO}}", nombreEncargadoFM38, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{DESCRIPCION_FIRMA}}", descripcion_firma, esInforme);
+                            reemplazarEnParrafo(parrafo, "{{FECHA_ANIO_ACTUAL}}", mesAnio, esInforme);
                         }
                     }
                 }
@@ -136,7 +138,7 @@ public class GeneradorWord {
         }
     }
 
-    private void reemplazarEnParrafo(XWPFParagraph parrafo, String buscar, String reemplazo) {
+    private void reemplazarEnParrafo(XWPFParagraph parrafo, String buscar, String reemplazo, boolean forzarV10) {
         if (reemplazo == null) reemplazo = "";
 
         List<XWPFRun> runs = parrafo.getRuns();
@@ -146,6 +148,9 @@ public class GeneradorWord {
                 if (texto != null && texto.contains(buscar)) {
                     texto = texto.replace(buscar, reemplazo);
                     run.setText(texto, 0);
+                    if (forzarV10) {
+                        run.setFontSize(10);
+                    }
                 }
             }
         }

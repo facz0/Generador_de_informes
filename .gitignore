@@ -45,5 +45,7 @@ buildNumber.properties
 # Evita subir tus archivos JSON con la data de prueba de los cajeros
 *.json
 
+*.db
+
 
 

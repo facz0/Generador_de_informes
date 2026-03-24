@@ -1,35 +1,17 @@
 package com.onpe.genereador_informes.vista;
 
 import com.onpe.genereador_informes.controlador.DashboardController;
-import com.onpe.genereador_informes.model.Contrato;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
-import java.time.LocalDate;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import javafx.scene.control.TableCell;
 
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javafx.scene.control.cell.CheckBoxTableCell;
 public class DashboardView {
     private DashboardController controlador;
     private BorderPane contenidoCentral;
-    private Map<Contrato, BooleanProperty> selecciones = new HashMap<>();
-    private FilteredList<Contrato> filteredData;
-    private VBox contenedorFiltros = new VBox(8);
 
     static final String COLOR_MENU = "#1D2B61";
     static final String COLOR_HOVER = "#2a3d8f";
@@ -139,7 +121,6 @@ public class DashboardView {
         ButtonType btnSi = new ButtonType("Sí");
         ButtonType btnNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(btnSi, btnNo);
-        // Reducir separación entre botones
         alert.getDialogPane().lookupAll(".button-bar").forEach(node -> {
             if (node instanceof ButtonBar) {
                 ((ButtonBar) node).setButtonMinWidth(60);

@@ -33,7 +33,6 @@ public class DashboardController {
     }
 
     public List<String> obtenerNombresCargos() {
-        // Solo cargos que aparecen en contratos no-SUDIME
         return contratoDao.obtenerContratos().stream()
             .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
             .map(c -> c.getPersonal().getCargoArea().getCargo().getNombreCargo())
@@ -86,12 +85,11 @@ public class DashboardController {
     // ===== INFORMES GENERALES (excluye SUDIME) =====
 
     public boolean generarInformes(List<Contrato> listaContratos) {
-        String rutaPlantilla = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
+        String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
         String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/temp/words/";
         String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/temp/pdfs/";
         String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/";
 
-        // Si no se pasa lista, generar todos (excepto SUDIME)
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerDatosParaTabla();
         } else {
@@ -99,7 +97,6 @@ public class DashboardController {
                 .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
                 .collect(Collectors.toList());
         }
-
         if (listaContratos.isEmpty()) return false;
 
         new File(carpetaTempWord).mkdirs();
@@ -123,12 +120,11 @@ public class DashboardController {
     }
 
     public boolean generarFM38(List<Contrato> listaContratos) {
-        String rutaPlantilla  = "plantillas/FM38_formato.docx";
+        String rutaPlantilla   = "plantillas/FM38_formato.docx";
         String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/temp/words/";
         String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/temp/pdfs/";
         String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/";
 
-        // Si no se pasa lista, generar todos (excepto SUDIME)
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerDatosParaTabla();
         } else {
@@ -136,10 +132,8 @@ public class DashboardController {
                 .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
                 .collect(Collectors.toList());
         }
-
         if (listaContratos.isEmpty()) return false;
 
-        // Ordenar por número de contrato (3er segmento)
         listaContratos = listaContratos.stream()
             .sorted((a, b) -> {
                 try {
@@ -215,7 +209,6 @@ public class DashboardController {
         }
         if (listaContratos.isEmpty()) return false;
 
-        // Ordenar por número de contrato
         listaContratos = listaContratos.stream()
             .sorted((a, b) -> {
                 try {
