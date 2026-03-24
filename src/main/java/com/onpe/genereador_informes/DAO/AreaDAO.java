@@ -49,7 +49,7 @@ public class AreaDAO {
         try {
             Connection conn = Conexion.obtenerConexion();
             PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, nombre);
+            ps.setString(1, nombre.toUpperCase());
             ps.executeUpdate();
             ps.close();
             return true;

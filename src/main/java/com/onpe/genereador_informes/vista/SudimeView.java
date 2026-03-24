@@ -63,11 +63,11 @@ public class SudimeView {
 
         TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
         colNombre.setPrefWidth(280);
-        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getApellidos() + " " + cell.getValue().getEmpleado().getNombres()));
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getApellido() + " " + cell.getValue().getPersonal().getNombre()));
 
         TableColumn<Contrato, String> colDni = new TableColumn<>("DNI");
         colDni.setPrefWidth(100);
-        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getDni()));
+        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getDni()));
 
         TableColumn<Contrato, String> colContrato = new TableColumn<>("N° Contrato");
         colContrato.setPrefWidth(220);
@@ -76,7 +76,7 @@ public class SudimeView {
         TableColumn<Contrato, String> colOdpe = new TableColumn<>("ODPE");
         colOdpe.setPrefWidth(200);
         colOdpe.setCellValueFactory(cell -> new SimpleStringProperty(
-            cell.getValue().getEmpleado().getOdpe() != null ? cell.getValue().getEmpleado().getOdpe().getNombreOdpe() : ""));
+            cell.getValue().getPersonal().getOdpe() != null ? cell.getValue().getPersonal().getOdpe().getNombreOdpe() : ""));
 
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colContrato, colOdpe);
 
@@ -86,10 +86,56 @@ public class SudimeView {
         PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
         paginador.setDatos(listaSudime);
 
+        // ===== FILTROS =====
+        TextField txtDni = new TextField();
+        txtDni.setPromptText("DNI");
+        txtDni.setPrefWidth(110);
+
+        TextField txtNombre = new TextField();
+        txtNombre.setPromptText("Nombre");
+        txtNombre.setPrefWidth(180);
+
+        ComboBox<String> comboOdpe = crearComboFiltro(controlador.obtenerNombresOdpesSudime(), "ODPE", 220);
+
+        Button btnFiltrar = DashboardView.crearBotonAccion("Filtrar", "#1D2B61");
+        Button btnLimpiar = new Button("Limpiar");
+        btnLimpiar.setStyle("-fx-background-color: transparent; -fx-text-fill: #718096; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-padding: 7 14; -fx-cursor: hand;");
+
+        HBox filtros = new HBox(10);
+        filtros.setPadding(new Insets(0, 0, 6, 0));
+        filtros.setAlignment(Pos.CENTER_LEFT);
+        filtros.getChildren().addAll(txtDni, txtNombre, comboOdpe);
+
+        HBox filtrosBotones = new HBox(10);
+        filtrosBotones.setPadding(new Insets(0, 0, 10, 0));
+        filtrosBotones.setAlignment(Pos.CENTER_LEFT);
+        filtrosBotones.getChildren().addAll(btnFiltrar, btnLimpiar);
+
+        btnFiltrar.setOnAction(e -> {
+            String dniVal = txtDni.getText().trim().toLowerCase();
+            String nombreVal = txtNombre.getText().trim().toLowerCase();
+            String odpeVal = comboOdpe.getValue() != null ? comboOdpe.getValue().toLowerCase() : comboOdpe.getEditor().getText().trim().toLowerCase();
+            List<Contrato> filtrados = listaSudime.stream().filter(c ->
+                (dniVal.isEmpty() || c.getPersonal().getDni().toLowerCase().contains(dniVal))
+                && (nombreVal.isEmpty() || (c.getPersonal().getNombre() + " " + c.getPersonal().getApellido()).toLowerCase().contains(nombreVal))
+                && (odpeVal.isEmpty() || (c.getPersonal().getOdpe() != null && c.getPersonal().getOdpe().getNombreOdpe().toLowerCase().contains(odpeVal)))
+            ).collect(java.util.stream.Collectors.toList());
+            datos.setAll(filtrados);
+            paginador.setDatos(filtrados);
+        });
+
+        btnLimpiar.setOnAction(e -> {
+            txtDni.clear(); txtNombre.clear();
+            comboOdpe.setValue(null); comboOdpe.getEditor().clear();
+            comboOdpe.setItems(FXCollections.observableArrayList(controlador.obtenerNombresOdpesSudime()));
+            datos.setAll(listaSudime);
+            paginador.setDatos(listaSudime);
+        });
+
         VBox centro = new VBox(8);
         centro.setPadding(new Insets(20, 24, 0, 24));
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(tabla, paginador.getControles());
+        centro.getChildren().addAll(filtros, filtrosBotones, tabla, paginador.getControles());
         contenedor.setCenter(centro);
 
         // ===== BOTTOM =====
@@ -103,9 +149,15 @@ public class SudimeView {
             List<Contrato> seleccionados = datos.stream()
                 .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
                 .collect(Collectors.toList());
-            if (seleccionados.isEmpty()) { DashboardView.mostrarAlerta("⚠ Sin selección", "Selecciona al menos un colaborador."); return; }
-            if (controlador.generarInformesSudime(seleccionados))
-                DashboardView.mostrarAlerta("✅ Informes generados", seleccionados.size() + " informes SUDIME generados.");
+            boolean confirmar = DashboardView.mostrarConfirmacion(
+                "Confirmar generación",
+                seleccionados.isEmpty()
+                    ? "¿Generar informes para todos los SUDIME?"
+                    : "¿Generar informes para " + seleccionados.size() + " SUDIME seleccionado(s)?");
+            if (!confirmar) return;
+            boolean ok = controlador.generarInformesSudime(seleccionados.isEmpty() ? null : seleccionados);
+            if (ok) DashboardView.mostrarAlerta("✅ Informes generados", "Informes SUDIME generados correctamente.");
+            else DashboardView.mostrarAlerta("⚠ Sin datos", "No hay contratos SUDIME para generar.");
         });
 
         Button btnFM38 = DashboardView.crearBotonAccion("Generar FM38", "#2980b9");
@@ -113,12 +165,54 @@ public class SudimeView {
             List<Contrato> seleccionados = datos.stream()
                 .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
                 .collect(Collectors.toList());
-            if (seleccionados.isEmpty()) { DashboardView.mostrarAlerta("⚠ Sin selección", "Selecciona al menos un colaborador."); return; }
-            if (controlador.generarFM38Sudime(seleccionados))
-                DashboardView.mostrarAlerta("✅ FM38 generados", seleccionados.size() + " formularios FM38 SUDIME generados.");
+            boolean confirmar = DashboardView.mostrarConfirmacion(
+                "Confirmar generación",
+                seleccionados.isEmpty()
+                    ? "¿Generar FM38 para todos los SUDIME?"
+                    : "¿Generar FM38 para " + seleccionados.size() + " SUDIME seleccionado(s)?");
+            if (!confirmar) return;
+            boolean ok = controlador.generarFM38Sudime(seleccionados.isEmpty() ? null : seleccionados);
+            if (ok) DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 SUDIME generados correctamente.");
+            else DashboardView.mostrarAlerta("⚠ Sin datos", "No hay contratos SUDIME para generar.");
         });
 
         bottomBar.getChildren().addAll(btnInforme, btnFM38);
         contenedor.setBottom(bottomBar);
+    }
+
+    private ComboBox<String> crearComboFiltro(List<String> opciones, String prompt, int ancho) {
+        ObservableList<String> listaCompleta = FXCollections.observableArrayList(opciones);
+        ComboBox<String> combo = new ComboBox<>(FXCollections.observableArrayList(listaCompleta));
+        combo.setEditable(true);
+        combo.setPromptText(prompt);
+        combo.setPrefWidth(ancho);
+        combo.setVisibleRowCount(10);
+        combo.setConverter(new javafx.util.StringConverter<>() {
+            public String toString(String s) { return s == null ? "" : s; }
+            public String fromString(String s) { return s; }
+        });
+        final boolean[] actualizando = {false};
+        combo.getEditor().textProperty().addListener((obs, anterior, nuevo) -> {
+            if (actualizando[0]) return;
+            String valorActual = combo.getValue();
+            if (valorActual != null && valorActual.equals(nuevo)) return;
+            if (nuevo == null || nuevo.isEmpty()) {
+                actualizando[0] = true;
+                combo.setValue(null);
+                combo.setItems(FXCollections.observableArrayList(listaCompleta));
+                actualizando[0] = false;
+                return;
+            }
+            ObservableList<String> filtrados = listaCompleta.stream()
+                .filter(s -> s.toLowerCase().contains(nuevo.toLowerCase()))
+                .collect(java.util.stream.Collectors.toCollection(FXCollections::observableArrayList));
+            actualizando[0] = true;
+            combo.setItems(filtrados);
+            combo.getEditor().setText(nuevo);
+            combo.getEditor().positionCaret(nuevo.length());
+            actualizando[0] = false;
+            if (!filtrados.isEmpty()) combo.show();
+        });
+        return combo;
     }
 }

@@ -8,24 +8,16 @@ public class Contrato {
     private String numeroContrato;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
-    private String estado;
-    private Empleado empleado;
-    private Cargo cargo;
-    private Area area;
-    private int idCargoArea;
+    private Personal personal;
 
     public Contrato (){}
 
-    public Contrato(int idContrato, String numeroContrato, LocalDate fechaInicio, LocalDate fechaFin,
-                    String estado, Empleado empleado, Cargo cargo, Area area) {
+    public Contrato(int idContrato, String numeroContrato, LocalDate fechaInicio, LocalDate fechaFin, Personal personal) {
         this.idContrato = idContrato;
         this.numeroContrato = numeroContrato;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
-        this.estado = estado;
-        this.empleado = empleado;
-        this.cargo = cargo;
-        this.area = area;
+        this.personal = personal;
     }
 
     public int getIdContrato() {
@@ -60,44 +52,12 @@ public class Contrato {
         this.fechaFin = fechaFin;
     }
 
-    public String getEstado() {
-        return estado;
+    public Personal getPersonal() {
+        return personal;
     }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public Empleado getEmpleado() {
-        return empleado;
-    }
-
-    public void setEmpleado(Empleado empleado) {
-        this.empleado = empleado;
-    }
-
-    public Cargo getCargo() {
-        return cargo;
-    }
-
-    public void setCargo(Cargo cargo) {
-        this.cargo = cargo;
-    }
-
-    public Area getArea() {
-        return area;
-    }
-
-    public void setArea(Area area) {
-        this.area = area;
-    }
-
-    public int getIdCargoArea() {
-        return idCargoArea;
-    }
-
-    public void setIdCargoArea(int idCargoArea) {
-        this.idCargoArea = idCargoArea;
+    public void setPersonal(Personal personal) {
+        this.personal = personal;
     }
 
     @Override
@@ -106,9 +66,6 @@ public class Contrato {
                 " | numeroContrato: " + numeroContrato +
                 " | fechaInicio: " + fechaInicio +
                 " | fechaFin: " + fechaFin +
-                " | estado: " + estado +
-                " | empleado: " + empleado +
-                " | cargo: " + cargo +
-                " | area: " + area;
+                " | personal: " + personal;
     }
 }

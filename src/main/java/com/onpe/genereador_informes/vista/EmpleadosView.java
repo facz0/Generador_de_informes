@@ -1,12 +1,12 @@
 package com.onpe.genereador_informes.vista;
 
-import com.onpe.genereador_informes.DAO.CargoAreaDAO;
-import com.onpe.genereador_informes.DAO.PersonalDAO;
-import com.onpe.genereador_informes.database.Conexion;
+import com.onpe.genereador_informes.controlador.EmpleadosController;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -16,63 +16,85 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.sql.*;
-import java.time.LocalDate;
-
 public class EmpleadosView {
 
     private BorderPane contenedor;
-    private PersonalDAO personalDAO = new PersonalDAO();
-    private CargoAreaDAO cargoAreaDAO = new CargoAreaDAO();
+    private EmpleadosController controlador;
+    
     private ObservableList<String[]> datosTabla = FXCollections.observableArrayList();
+    private FilteredList<String[]> filteredData;
+    private VBox contenedorFiltros = new VBox(8);
     private TableView<String[]> tabla;
     private PaginadorTabla<String[]> paginador;
 
     public EmpleadosView(BorderPane contenedor) {
         this.contenedor = contenedor;
+        this.controlador = new EmpleadosController();
     }
 
     public void mostrar() {
         contenedor.setTop(DashboardView.crearHeader("Empleados", "Administra los colaboradores del sistema"));
         contenedor.setBottom(null);
 
-        // ===== BARRA SUPERIOR =====
+        // Barra superior
         HBox topBar = new HBox(12);
         topBar.setPadding(new Insets(16, 24, 8, 24));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        TextField txtBuscar = new TextField();
-        txtBuscar.setPromptText("Buscar por DNI...");
-        txtBuscar.setStyle("-fx-padding: 8; -fx-pref-width: 220px;");
-        txtBuscar.textProperty().addListener((obs, old, val) -> filtrar(val));
+        Button btnAgregarFiltro = DashboardView.crearBotonAccion("+ Agregar Filtro", "#2980b9");
+        btnAgregarFiltro.setOnAction(e -> agregarFiltroUI());
 
         Button btnNuevo = DashboardView.crearBotonAccion("+ Nuevo Empleado", "#1D2B61");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        topBar.getChildren().addAll(txtBuscar, spacer, btnNuevo);
+        topBar.getChildren().addAll(btnAgregarFiltro, spacer, btnNuevo);
 
-        // ===== TABLA =====
+        contenedorFiltros.setPadding(new Insets(0, 24, 8, 24));
+
+        // Tabla
         tabla = new TableView<>();
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
-        tabla.setItems(datosTabla);
+        tabla.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+
+        filteredData = new FilteredList<>(datosTabla, p -> true);
+        SortedList<String[]> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(tabla.comparatorProperty());
+        tabla.setItems(sortedData);
+
+        TableColumn<String[], String> colNum = new TableColumn<>("N°");
+        colNum.prefWidthProperty().bind(tabla.widthProperty().multiply(0.03));
+        colNum.setCellFactory(col -> new TableCell<String[], String>() {
+            @Override
+            public void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
+        });
 
         tabla.getColumns().addAll(
-            PaginadorTabla.crearColumnaNumero(),
-            col("DNI", 90, 1),
-            col("Apellidos", 160, 3),
-            col("Nombres", 160, 2),
-            col("Cargo", 200, 5),
-            col("Gerencia", 160, 7),
-            col("N° Contrato", 130, 9),
-            col("Estado", 70, 4)
-        );
+                colNum,
+                col("DNI", 0.07, 1),
+                col("Apellidos", 0.12, 3),
+                col("Nombres", 0.12, 2),
+                col("Cargo", 0.20, 5),
+                col("Área", 0.12, 6),
+                col("N° Contrato", 0.07, 9),
+                col("Fecha inicio de labores", 0.09, 10),
+                col("Fecha fin de labores", 0.09, 11),
+                col("ODPE", 0.05, 8),
+                col("Estado", 0.04, 4));
 
         // Doble click para editar
         tabla.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 String[] sel = tabla.getSelectionModel().getSelectedItem();
-                if (sel != null) abrirFormulario(sel);
+                if (sel != null)
+                    abrirFormulario(sel);
             }
         });
 
@@ -82,7 +104,7 @@ public class EmpleadosView {
 
         VBox centro = new VBox(0);
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(topBar, tabla, paginador.getControles());
+        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginador.getControles());
         VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
         VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
 
@@ -116,29 +138,25 @@ public class EmpleadosView {
         dpFechaFin.setPromptText("Fecha fin (opcional)");
         dpFechaFin.setMaxWidth(Double.MAX_VALUE);
 
-        // Combo de cargos (solo cargos únicos)
         ComboBox<String[]> comboCargo = crearCombo(datosCargosList, 1, -1, "");
         comboCargo.setPromptText("Selecciona un cargo");
 
-        // Combo de áreas filtradas según cargo seleccionado
         ComboBox<String[]> comboArea = crearCombo(datosAreasFiltradas, 1, -1, "");
         comboArea.setPromptText("Primero selecciona un cargo");
         comboArea.setDisable(true);
 
-        // ODPE deshabilitado por defecto
         ComboBox<String[]> comboOdpe = crearCombo(datosOdpe, 1, -1, "");
-        comboOdpe.setPromptText("Solo para cargo_area ID 10");
+        comboOdpe.setPromptText("Solo para ODPEs");
         comboOdpe.setDisable(true);
 
-        // Al seleccionar cargo, cargar áreas asociadas
         comboCargo.setOnAction(e -> {
             String[] cargoSel = comboCargo.getValue();
             comboArea.setValue(null);
             comboOdpe.setValue(null);
             comboOdpe.setDisable(true);
-            datosAreasFiltradas.clear();
+            
             if (cargoSel != null) {
-                cargarAreasPorCargo(Integer.parseInt(cargoSel[0]), datosAreasFiltradas);
+                controlador.cargarAreasPorCargo(Integer.parseInt(cargoSel[0]), datosAreasFiltradas);
                 comboArea.setDisable(false);
                 comboArea.setPromptText("Selecciona un área");
             } else {
@@ -147,30 +165,29 @@ public class EmpleadosView {
             }
         });
 
-        // Al seleccionar área, habilitar ODPE solo si id_cargo_area = 10
+        // Al seleccionar área, habilitar ID de cargo_area (58) para habilitar ODPE
         comboArea.setOnAction(e -> {
             String[] areaSel = comboArea.getValue();
             comboOdpe.setValue(null);
-            if (areaSel != null && areaSel[0].equals("10")) {
+            if (areaSel != null && areaSel[0].equals("58")) {
                 comboOdpe.setDisable(false);
                 comboOdpe.setPromptText("Selecciona una ODPE");
             } else {
                 comboOdpe.setDisable(true);
-                comboOdpe.setPromptText("No aplica para este cargo/área");
+                comboOdpe.setPromptText("No aplica");
             }
         });
 
         ComboBox<String[]> comboGerencia = crearComboSimple(datosGerencia);
         comboGerencia.setPromptText("Gerencia");
 
-        ComboBox<String> comboEstado = new ComboBox<>(FXCollections.observableArrayList("A", "I"));
+        ComboBox<String> comboEstado = new ComboBox<>(FXCollections.observableArrayList("ACTIVO", "INACTIVO"));
         comboEstado.setPromptText("Estado");
         comboEstado.setMaxWidth(Double.MAX_VALUE);
 
-        // Cargar combos
-        cargarCombo("SELECT id_cargo, nombre_cargo FROM tb_cargo ORDER BY nombre_cargo", datosCargosList);
-        cargarCombo("SELECT id_gerencia, nombre_gerencia FROM tb_gerencia ORDER BY nombre_gerencia", datosGerencia);
-        cargarCombo("SELECT id_odpe, nombre_odpe FROM tb_odpe ORDER BY nombre_odpe", datosOdpe);
+        controlador.cargarCargos(datosCargosList);
+        controlador.cargarGerencias(datosGerencia);
+        controlador.cargarOdpes(datosOdpe);
 
         // Si es edición, prellenar
         if (empleado != null) {
@@ -179,8 +196,10 @@ public class EmpleadosView {
             txtApellido.setText(empleado[3]);
             comboEstado.setValue(empleado[4]);
             txtNumContrato.setText(empleado[9]);
-            if (!empleado[10].isEmpty()) dpFechaInicio.setValue(java.time.LocalDate.parse(empleado[10]));
-            if (!empleado[11].isEmpty()) dpFechaFin.setValue(java.time.LocalDate.parse(empleado[11]));
+            if (!empleado[10].isEmpty())
+                dpFechaInicio.setValue(java.time.LocalDate.parse(empleado[10]));
+            if (!empleado[11].isEmpty())
+                dpFechaFin.setValue(java.time.LocalDate.parse(empleado[11]));
         }
 
         Label lblMsg = new Label("");
@@ -195,11 +214,11 @@ public class EmpleadosView {
 
         if (empleado == null) btnEliminar.setVisible(false);
 
-        // Layout del formulario en 2 columnas
         GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
+        grid.setHgap(16); grid.setVgap(10); grid.setPadding(new Insets(20));
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setMinWidth(120); col1.setPrefWidth(120);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(col1, col2);
 
         agregarFila(grid, 0, "DNI *", txtDni);
         agregarFila(grid, 1, "Nombres *", txtNombre);
@@ -209,7 +228,7 @@ public class EmpleadosView {
         agregarFila(grid, 5, "Gerencia *", comboGerencia);
         agregarFila(grid, 6, "ODPE", comboOdpe);
         agregarFila(grid, 7, "Estado *", comboEstado);
-        agregarFila(grid, 8, "N° Contrato *", txtNumContrato);
+        agregarFila(grid, 8, "N° Contrato", txtNumContrato);
         agregarFila(grid, 9, "Fecha inicio *", dpFechaInicio);
         agregarFila(grid, 10, "Fecha fin", dpFechaFin);
 
@@ -222,20 +241,22 @@ public class EmpleadosView {
         VBox root = new VBox(0);
         root.getChildren().addAll(grid, botones);
 
-        // Acciones
         btnGuardar.setOnAction(e -> {
             String dni = txtDni.getText().trim();
             String nombre = txtNombre.getText().trim();
             String apellido = txtApellido.getText().trim();
             String numContrato = txtNumContrato.getText().trim();
+            
+            if (numContrato.isEmpty()) { numContrato = "S/N"; }
+            
             String fechaInicio = dpFechaInicio.getValue() != null ? dpFechaInicio.getValue().toString() : "";
             String fechaFin = dpFechaFin.getValue() != null ? dpFechaFin.getValue().toString() : "";
             String[] ca = comboArea.getValue();
             String[] ger = comboGerencia.getValue();
             String estado = comboEstado.getValue();
 
-            if (dni.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || numContrato.isEmpty()
-                    || fechaInicio.isEmpty() || comboCargo.getValue() == null || ca == null || ger == null || estado == null) {
+            if (dni.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || fechaInicio.isEmpty()
+                    || comboCargo.getValue() == null || ca == null || ger == null || estado == null) {
                 setMsg(lblMsg, "⚠ Completa los campos obligatorios (*)", false);
                 return;
             }
@@ -244,68 +265,107 @@ public class EmpleadosView {
             int idGerencia = Integer.parseInt(ger[0]);
             Integer idOdpe = comboOdpe.getValue() != null ? Integer.parseInt(comboOdpe.getValue()[0]) : null;
 
-            boolean ok;
-            if (empleado != null) {
-                int idPersonal = Integer.parseInt(empleado[0]);
-                if (personalDAO.existeDni(dni, idPersonal)) { setMsg(lblMsg, "⚠ El DNI ya está registrado", false); return; }
-                ok = personalDAO.actualizar(idPersonal, numContrato, fechaInicio, fechaFin, dni, nombre, apellido, idCargoArea, idGerencia, idOdpe, estado);
-            } else {
-                if (personalDAO.existeDni(dni, -1)) { setMsg(lblMsg, "⚠ El DNI ya está registrado", false); return; }
-                ok = personalDAO.crear(numContrato, fechaInicio, fechaFin, dni, nombre, apellido, idCargoArea, idGerencia, idOdpe, estado);
-            }
+            String msjError = controlador.procesarGuardado(empleado, numContrato, fechaInicio, fechaFin, dni, nombre, apellido, idCargoArea, idGerencia, idOdpe, estado);
 
-            if (ok) {
+            if (msjError.isEmpty()) {
                 cargarTabla();
                 modal.close();
             } else {
-                setMsg(lblMsg, "❌ Error al guardar", false);
+                setMsg(lblMsg, msjError, false);
             }
         });
 
         btnEliminar.setOnAction(e -> {
-            if (empleado != null && personalDAO.eliminar(Integer.parseInt(empleado[0]))) {
-                cargarTabla();
-                modal.close();
+            if (empleado != null) {
+                boolean exito = controlador.eliminarEmpleado(Integer.parseInt(empleado[0]));
+                if (exito) {
+                    cargarTabla();
+                    modal.close();
+                } else {
+                    setMsg(lblMsg, "Error al eliminar de la base de datos", false);
+                }
             }
         });
 
-        modal.setScene(new Scene(root, 520, 520));
+        modal.setScene(new Scene(root, 530, 530));
         modal.showAndWait();
     }
 
-    private void filtrar(String texto) {
-        if (texto == null || texto.isEmpty()) {
-            cargarTabla();
-            return;
-        }
-        ObservableList<String[]> filtrado = FXCollections.observableArrayList();
-        for (String[] row : datosTabla) {
-            if (row[1].contains(texto)) filtrado.add(row);
-        }
-        tabla.setItems(filtrado);
+    private void agregarFiltroUI() {
+        HBox filaFiltro = new HBox(10);
+        filaFiltro.setAlignment(Pos.CENTER_LEFT);
+
+        ComboBox<String> comboColumna = new ComboBox<>(FXCollections.observableArrayList(
+                "DNI", "Apellidos", "Nombres", "Cargo", "Área", "Estado"));
+        comboColumna.setValue("DNI");
+        comboColumna.setStyle("-fx-padding: 4;");
+
+        TextField txtValor = campo("Valor a buscar...");
+
+        Button btnEliminar = new Button("X");
+        btnEliminar.setStyle("-fx-background-color: #e53e3e; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+
+        filaFiltro.getChildren().addAll(comboColumna, txtValor, btnEliminar);
+        contenedorFiltros.getChildren().add(filaFiltro);
+
+        btnEliminar.setOnAction(e -> {
+            contenedorFiltros.getChildren().remove(filaFiltro);
+            aplicarFiltros();
+        });
+        comboColumna.setOnAction(e -> aplicarFiltros());
+        txtValor.textProperty().addListener((obs, oldV, newV) -> aplicarFiltros());
+
+        aplicarFiltros();
+    }
+
+    private void aplicarFiltros() {
+        if (filteredData == null) return;
+        filteredData.setPredicate(row -> {
+            for (javafx.scene.Node node : contenedorFiltros.getChildren()) {
+                if (node instanceof HBox) {
+                    HBox fila = (HBox) node;
+                    @SuppressWarnings("unchecked")
+                    ComboBox<String> combo = (ComboBox<String>) fila.getChildren().get(0);
+                    TextField txt = (TextField) fila.getChildren().get(1);
+
+                    String columna = combo.getValue();
+                    String filtro = txt.getText().trim().toLowerCase();
+
+                    if (filtro.isEmpty()) continue;
+
+                    int idx = 1; 
+                    switch (columna) {
+                        case "DNI": idx = 1; break;
+                        case "Nombres": idx = 2; break;
+                        case "Apellidos": idx = 3; break;
+                        case "Estado": idx = 4; break;
+                        case "Cargo": idx = 5; break;
+                        case "Área": idx = 6; break;
+                    }
+
+                    String valorCelda = row[idx] == null ? "" : row[idx].toLowerCase();
+
+                    if (columna.equals("DNI") || columna.equals("Nombres") || columna.equals("Apellidos")
+                            || columna.equals("Cargo") || columna.equals("Área")) {
+                        if (!valorCelda.startsWith(filtro)) return false;
+                    } else {
+                        if (!valorCelda.contains(filtro)) return false;
+                    }
+                }
+            }
+            return true;
+        });
     }
 
     private void cargarTabla() {
-        datosTabla.setAll(personalDAO.obtenerTodos());
+        datosTabla.setAll(controlador.obtenerTodosLosEmpleados());
         if (paginador != null) paginador.setDatos(datosTabla);
-    }
-
-    private void cargarCombo(String sql, ObservableList<String[]> lista) {
-        lista.clear();
-        try {
-            Connection conn = Conexion.obtenerConexion();
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery(sql);
-            while (rs.next()) lista.add(new String[]{String.valueOf(rs.getInt(1)), rs.getString(2)});
-            rs.close(); st.close();
-        } catch (SQLException e) {
-            System.err.println("Error cargando combo: " + e.getMessage());
-        }
     }
 
     private void agregarFila(GridPane grid, int fila, String etiqueta, Control control) {
         Label lbl = new Label(etiqueta);
         lbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #4a5568;");
+        lbl.setMinWidth(120);
         lbl.setPrefWidth(120);
         control.setMaxWidth(Double.MAX_VALUE);
         GridPane.setHgrow(control, Priority.ALWAYS);
@@ -313,9 +373,9 @@ public class EmpleadosView {
         grid.add(control, 1, fila);
     }
 
-    private TableColumn<String[], String> col(String titulo, int ancho, int idx) {
+    private TableColumn<String[], String> col(String titulo, double porcentaje, int idx) {
         TableColumn<String[], String> col = new TableColumn<>(titulo);
-        col.setPrefWidth(ancho);
+        col.prefWidthProperty().bind(tabla.widthProperty().multiply(porcentaje));
         col.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[idx]));
         return col;
     }
@@ -343,7 +403,6 @@ public class EmpleadosView {
         combo.setMaxWidth(Double.MAX_VALUE);
         combo.setEditable(true);
 
-        // Converter para mostrar el texto correcto en el editor
         combo.setConverter(new javafx.util.StringConverter<>() {
             public String toString(String[] item) {
                 if (item == null) return "";
@@ -355,12 +414,14 @@ public class EmpleadosView {
         combo.setCellFactory(lv -> new ListCell<>() {
             protected void updateItem(String[] item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setText(null); return; }
+                if (empty || item == null) {
+                    setText(null);
+                    return;
+                }
                 setText(idx2 == -1 ? item[idx1] : item[idx1] + sep + item[idx2]);
             }
         });
 
-        // Autocomplete: filtrar al escribir
         combo.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null || combo.getValue() != null) return;
             String filtro = newVal.toLowerCase();
@@ -388,22 +449,6 @@ public class EmpleadosView {
         tf.setPromptText(prompt);
         tf.setStyle("-fx-padding: 7;");
         return tf;
-    }
-
-    private void cargarAreasPorCargo(int idCargo, ObservableList<String[]> lista) {
-        lista.clear();
-        String sql = "SELECT ca.id_cargo_area, a.nombre_area FROM tb_cargo_area ca " +
-                "INNER JOIN tb_area a ON ca.id_area = a.id_area WHERE ca.id_cargo = ? ORDER BY a.nombre_area";
-        try {
-            Connection conn = Conexion.obtenerConexion();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, idCargo);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) lista.add(new String[]{String.valueOf(rs.getInt(1)), rs.getString(2)});
-            rs.close(); ps.close();
-        } catch (SQLException e) {
-            System.err.println("Error cargando áreas por cargo: " + e.getMessage());
-        }
     }
 
     private void setMsg(Label lbl, String texto, boolean exito) {

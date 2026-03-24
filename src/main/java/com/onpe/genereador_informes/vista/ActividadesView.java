@@ -38,10 +38,14 @@ public class ActividadesView {
         contenedor.setTop(DashboardView.crearHeader("Actividades", "Administra las actividades por cargo y área"));
         contenedor.setBottom(null);
 
-        // ===== COMBO CARGO+AREA =====
+        // ===== COMBO CARGO+AREA (autocompletable) =====
+        cargarCargoArea();
+
         comboCargoArea = new ComboBox<>(datosCargoArea);
-        comboCargoArea.setPromptText("Selecciona cargo");
+        comboCargoArea.setPromptText("Busca por cargo o área...");
         comboCargoArea.setMaxWidth(Double.MAX_VALUE);
+        comboCargoArea.setEditable(true);
+        comboCargoArea.setVisibleRowCount(10);
         comboCargoArea.setCellFactory(lv -> new ListCell<>() {
             protected void updateItem(String[] item, boolean empty) {
                 super.updateItem(item, empty);
@@ -54,15 +58,46 @@ public class ActividadesView {
                 setText(empty || item == null ? null : item[1] + " — " + item[2]);
             }
         });
-        comboCargoArea.setOnAction(e -> cargarTabla());
-        cargarCargoArea();
+        comboCargoArea.setConverter(new javafx.util.StringConverter<>() {
+            public String toString(String[] item) { return item == null ? "" : item[1] + " — " + item[2]; }
+            public String[] fromString(String s) { return null; }
+        });
 
-        HBox topBar = new HBox(12);
-        topBar.setPadding(new Insets(16, 24, 0, 24));
+        final boolean[] actualizandoCombo = {false};
+        comboCargoArea.getEditor().textProperty().addListener((obs, anterior, nuevo) -> {
+            if (actualizandoCombo[0]) return;
+            String[] valorActual = comboCargoArea.getValue();
+            if (valorActual != null && (valorActual[1] + " — " + valorActual[2]).equals(nuevo)) return;
+            if (nuevo == null || nuevo.isEmpty()) {
+                actualizandoCombo[0] = true;
+                comboCargoArea.setValue(null);
+                comboCargoArea.setItems(datosCargoArea);
+                actualizandoCombo[0] = false;
+                return;
+            }
+            String filtro = nuevo.toLowerCase();
+            ObservableList<String[]> filtrados = datosCargoArea.stream()
+                .filter(s -> (s[1] + " " + s[2]).toLowerCase().contains(filtro))
+                .collect(javafx.collections.FXCollections::observableArrayList,
+                         ObservableList::add, ObservableList::addAll);
+            actualizandoCombo[0] = true;
+            comboCargoArea.setItems(filtrados);
+            comboCargoArea.getEditor().setText(nuevo);
+            comboCargoArea.getEditor().positionCaret(nuevo.length());
+            actualizandoCombo[0] = false;
+            if (!filtrados.isEmpty()) comboCargoArea.show();
+        });
+        comboCargoArea.valueProperty().addListener((obs, anterior, nuevo) -> {
+            if (nuevo != null) cargarTabla();
+        });
+
+        Label lblFiltro = new Label("Cargo:");
+        lblFiltro.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #4a5568;");
+
+        HBox topBar = new HBox(10);
+        topBar.setPadding(new Insets(0, 0, 0, 0));
+        topBar.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         HBox.setHgrow(comboCargoArea, Priority.ALWAYS);
-        Label lblFiltro = new Label("CARGO : ");
-        lblFiltro.setStyle("-fx-font-size: 13px; -fx-text-fill: #4a5568;");
-        lblFiltro.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         topBar.getChildren().addAll(lblFiltro, comboCargoArea);
 
         // ===== TABLA =====
@@ -84,7 +119,7 @@ public class ActividadesView {
 
         TableColumn<Actividad, String> colDesc = new TableColumn<>("Descripción");
         colDesc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDescripcion()));
-
+        colId.setPrefWidth(150);
         tabla.getColumns().addAll(colId, colDesc);
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tabla.setItems(datosTabla);
@@ -131,9 +166,9 @@ public class ActividadesView {
 
         // ===== FORMULARIO =====
         VBox formulario = new VBox(10);
-        formulario.setPrefWidth(400);
-        formulario.setMinWidth(400);
-        formulario.setMaxWidth(400);
+        formulario.setPrefWidth(320);
+        formulario.setMinWidth(320);
+        formulario.setMaxWidth(320);
         formulario.setPadding(new Insets(16));
         formulario.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-background-radius: 8; -fx-border-radius: 8;");
 
@@ -169,14 +204,11 @@ public class ActividadesView {
 
         // ===== LAYOUT =====
         VBox centroIzq = new VBox(12);
-        centroIzq.setPadding(new Insets(16, 16, 16, 24));
         VBox.setVgrow(tabla, Priority.ALWAYS);
         centroIzq.getChildren().addAll(topBar, tabla);
-        centroIzq.setPrefWidth(350);
-        centroIzq.setMinWidth(250);
 
         HBox layout = new HBox(16);
-        layout.setPadding(new Insets(0, 24, 16, 0));
+        layout.setPadding(new Insets(20, 24, 16, 24));
         HBox.setHgrow(centroIzq, Priority.ALWAYS);
         layout.getChildren().addAll(centroIzq, formulario);
 

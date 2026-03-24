@@ -59,19 +59,19 @@ public class FM38View {
 
         TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
         colNombre.setPrefWidth(280);
-        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getApellidos() + " " + cell.getValue().getEmpleado().getNombres()));
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getApellido() + " " + cell.getValue().getPersonal().getNombre()));
 
         TableColumn<Contrato, String> colDni = new TableColumn<>("DNI");
         colDni.setPrefWidth(100);
-        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getEmpleado().getDni()));
+        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getDni()));
 
         TableColumn<Contrato, String> colCargo = new TableColumn<>("Cargo");
         colCargo.setPrefWidth(250);
-        colCargo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getCargo().getNombreCargo()));
+        colCargo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getCargoArea().getCargo().getNombreCargo()));
 
         TableColumn<Contrato, String> colGerencia = new TableColumn<>("Gerencia");
         colGerencia.setPrefWidth(200);
-        colGerencia.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getArea().getNombreArea()));
+        colGerencia.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getGerencia().getNombreGerencia()));
 
         TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
@@ -114,9 +114,9 @@ public class FM38View {
         btnFiltrar.setOnAction(e -> {
             List<Contrato> filtrados = controlador.filtrarContratos(
                 txtDni.getText().trim(), txtNombre.getText().trim(),
-                comboCargo.getEditor().getText().trim(),
+                comboCargo.getValue() != null ? comboCargo.getValue() : comboCargo.getEditor().getText().trim(),
                 comboGerencia.getValue() == null ? "" : comboGerencia.getValue(),
-                comboArea.getEditor().getText().trim());
+                comboArea.getValue() != null ? comboArea.getValue() : comboArea.getEditor().getText().trim());
             datos.setAll(filtrados);
             paginador.setDatos(filtrados);
         });
@@ -126,6 +126,8 @@ public class FM38View {
             comboCargo.setValue(null); comboCargo.getEditor().clear();
             comboGerencia.setValue(null);
             comboArea.setValue(null); comboArea.getEditor().clear();
+            comboCargo.setItems(FXCollections.observableArrayList(controlador.obtenerNombresCargos()));
+            comboArea.setItems(FXCollections.observableArrayList(controlador.obtenerNombresAreas()));
             List<Contrato> todos = controlador.obtenerDatosParaTabla();
             datos.setAll(todos);
             paginador.setDatos(todos);
@@ -148,9 +150,15 @@ public class FM38View {
             List<Contrato> seleccionados = datos.stream()
                 .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
                 .collect(Collectors.toList());
-            if (seleccionados.isEmpty()) { DashboardView.mostrarAlerta("⚠ Sin selección", "Selecciona al menos un colaborador."); return; }
-            if (controlador.generarFM38Seleccionados(seleccionados))
-                DashboardView.mostrarAlerta("✅ FM38 generados", seleccionados.size() + " formularios FM38 generados correctamente.");
+            boolean confirmar = DashboardView.mostrarConfirmacion(
+                "Confirmar generación",
+                seleccionados.isEmpty()
+                    ? "¿Generar FM38 para todos los colaboradores?"
+                    : "¿Generar FM38 para " + seleccionados.size() + " colaborador(es) seleccionado(s)?");
+            if (!confirmar) return;
+            boolean ok = controlador.generarFM38(seleccionados.isEmpty() ? null : seleccionados);
+            if (ok) DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 generados correctamente.");
+            else DashboardView.mostrarAlerta("⚠ Sin datos", "No hay contratos para generar.");
         });
 
         bottomBar.getChildren().add(btnGenerar);
@@ -158,23 +166,36 @@ public class FM38View {
     }
 
     private ComboBox<String> crearComboFiltro(List<String> opciones, String prompt, int ancho) {
-        ObservableList<String> lista = FXCollections.observableArrayList();
-        lista.add("");
-        lista.addAll(opciones);
-        ComboBox<String> combo = new ComboBox<>(lista);
+        ObservableList<String> listaCompleta = FXCollections.observableArrayList(opciones);
+        ComboBox<String> combo = new ComboBox<>(FXCollections.observableArrayList(listaCompleta));
         combo.setEditable(true);
         combo.setPromptText(prompt);
         combo.setPrefWidth(ancho);
+        combo.setVisibleRowCount(10);
         combo.setConverter(new javafx.util.StringConverter<>() {
             public String toString(String s) { return s == null ? "" : s; }
             public String fromString(String s) { return s; }
         });
-        combo.getEditor().textProperty().addListener((o, a, n) -> {
-            if (combo.getValue() != null) return;
-            ObservableList<String> filtrados = FXCollections.observableArrayList();
-            filtrados.add("");
-            lista.stream().filter(s -> !s.isEmpty() && s.toLowerCase().contains(n.toLowerCase())).forEach(filtrados::add);
+        final boolean[] actualizando = {false};
+        combo.getEditor().textProperty().addListener((obs, anterior, nuevo) -> {
+            if (actualizando[0]) return;
+            String valorActual = combo.getValue();
+            if (valorActual != null && valorActual.equals(nuevo)) return;
+            if (nuevo == null || nuevo.isEmpty()) {
+                actualizando[0] = true;
+                combo.setValue(null);
+                combo.setItems(FXCollections.observableArrayList(listaCompleta));
+                actualizando[0] = false;
+                return;
+            }
+            ObservableList<String> filtrados = listaCompleta.stream()
+                .filter(s -> s.toLowerCase().contains(nuevo.toLowerCase()))
+                .collect(Collectors.toCollection(FXCollections::observableArrayList));
+            actualizando[0] = true;
             combo.setItems(filtrados);
+            combo.getEditor().setText(nuevo);
+            combo.getEditor().positionCaret(nuevo.length());
+            actualizando[0] = false;
             if (!filtrados.isEmpty()) combo.show();
         });
         return combo;
