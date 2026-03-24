@@ -82,7 +82,7 @@ public class ActividadesView {
 
         TableColumn<Actividad, String> colDesc = new TableColumn<>("Descripción");
         colDesc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDescripcion()));
-
+        colId.setPrefWidth(150);
         tabla.getColumns().addAll(colId, colDesc);
         tabla.setItems(datosTabla);
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");

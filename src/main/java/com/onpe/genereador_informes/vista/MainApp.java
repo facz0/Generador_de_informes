@@ -20,13 +20,11 @@ public class MainApp extends Application {
         //Instanciar Dao
         AreaDAO areaDAO = new AreaDAO();
         FirmaDAO firmaDAO = new FirmaDAO();
-        EmpleadoDAO empleadoDAO = new EmpleadoDAO();
         CargoDAO cargoDAO = new CargoDAO();
         ContratoDao contratoDao = new ContratoDao();
         // Obtenemos la lista de la base de datos
         //List<Area> misAreas = areaDAO.obtenerTodas();
         //List<Firma> misFirmas = firmaDAO.obtenerTodas();
-        //List<Empleado> misEmpleados = empleadoDAO.obtenerTodas();
         //List<Cargo> misCargos = cargoDAO.obtenerCargosConActividades();
         //List<Contrato> contratos = contratoDao.obtenerContratos();
         //System.out.println("--------------- CONTRATOS ----------------");
@@ -40,10 +38,6 @@ public class MainApp extends Application {
         //System.out.println("\n--- LISTA DE FIRMAS DESDE SQLITE ---");
         //for (Firma f : misFirmas){
         //    System.out.println(f.toString());
-        //}
-        //System.out.println("\n--- LISTA DE EMPLEADOS DESDE SQLITE ---");
-        //for (Empleado e : misEmpleados){
-        //    System.out.println(e.toString());
         //}
         //System.out.println("\n--- LISTA DE CARGOS Y SUS ACTIVIDADES ---");
         //for (Cargo c : misCargos){

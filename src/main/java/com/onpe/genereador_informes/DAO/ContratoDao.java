@@ -4,9 +4,11 @@ import com.onpe.genereador_informes.database.Conexion;
 import com.onpe.genereador_informes.model.Actividad;
 import com.onpe.genereador_informes.model.Area;
 import com.onpe.genereador_informes.model.Cargo;
+import com.onpe.genereador_informes.model.CargoArea;
 import com.onpe.genereador_informes.model.Contrato;
-import com.onpe.genereador_informes.model.Empleado;
+import com.onpe.genereador_informes.model.Gerencia;
 import com.onpe.genereador_informes.model.Odpe;
+import com.onpe.genereador_informes.model.Personal;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -67,29 +69,43 @@ public class ContratoDao {
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                Empleado empleado = new Empleado();
-                empleado.setId_empleado(rs.getInt("id_personal"));
-                empleado.setDni(rs.getString("dni"));
-                empleado.setNombres(rs.getString("nombre"));
-                empleado.setApellidos(rs.getString("apellido"));
+                Personal personal = new Personal();
+                personal.setIdPersonal(rs.getInt("id_personal"));
+                personal.setDni(rs.getString("dni"));
+                personal.setNombre(rs.getString("nombre"));
+                personal.setApellido(rs.getString("apellido"));
+                personal.setEstado(rs.getString("estado"));
 
                 int idOdpe = rs.getInt("id_odpe");
                 if (idOdpe > 0) {
                     Odpe odpe = new Odpe();
                     odpe.setIdOdpe(idOdpe);
                     odpe.setNombreOdpe(rs.getString("nombre_odpe"));
-                    empleado.setOdpe(odpe);
+                    personal.setOdpe(odpe);
                 }
 
-                int idCargoArea = rs.getInt("id_cargo_area");
+                Gerencia gerencia = new Gerencia();
+                gerencia.setIdGerencia(rs.getInt("id_gerencia"));
+                gerencia.setNombreGerencia(rs.getString("nombre_gerencia"));
+                personal.setGerencia(gerencia);
+
                 Cargo cargo = new Cargo();
                 cargo.setIdCargo(rs.getInt("id_cargo"));
                 cargo.setNombreCargo(rs.getString("nombre_cargo"));
+                
+                int idCargoArea = rs.getInt("id_cargo_area");
                 cargo.setListaActividades(obtenerActividadesPorCargoArea(idCargoArea));
 
                 Area area = new Area();
-                area.setIdArea(rs.getInt("id_gerencia"));
-                area.setNombreArea(rs.getString("nombre_gerencia"));
+                area.setIdArea(rs.getInt("id_area"));
+                area.setNombreArea(rs.getString("nombre_area"));
+
+                CargoArea cargoArea = new CargoArea();
+                cargoArea.setIdCargoArea(idCargoArea);
+                cargoArea.setCargo(cargo);
+                cargoArea.setArea(area);
+
+                personal.setCargoArea(cargoArea);
 
                 LocalDate fechaInicio = LocalDate.parse(rs.getString("fecha_inicio"));
                 LocalDate fechaFin = rs.getString("fecha_fin") != null ? LocalDate.parse(rs.getString("fecha_fin")) : LocalDate.now();
@@ -99,10 +115,7 @@ public class ContratoDao {
                 contrato.setNumeroContrato(rs.getString("numero_contrato"));
                 contrato.setFechaInicio(fechaInicio);
                 contrato.setFechaFin(fechaFin);
-                contrato.setEstado(rs.getString("estado"));
-                contrato.setEmpleado(empleado);
-                contrato.setCargo(cargo);
-                contrato.setArea(area);
+                contrato.setPersonal(personal);
 
                 listaContratos.add(contrato);
             }

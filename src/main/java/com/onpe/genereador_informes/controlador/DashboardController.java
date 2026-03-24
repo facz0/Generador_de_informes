@@ -22,7 +22,7 @@ public class DashboardController {
     }
     
     // Generar solo Informes de Actividades
-    public void generarSoloInformesActividades() {
+    public void generarSoloInformesActividades(List<Contrato> listaContratos) {
         String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
         //String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
         //String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
@@ -37,7 +37,6 @@ public class DashboardController {
         new File(carpetaDestino + "Informes_Actividades").mkdirs();
 
         GeneradorWord generador = new GeneradorWord();
-        List<Contrato> listaContratos = contratoDao.obtenerContratos();
         
         // SIN LÍMITE - Generar todos los informes
         int total = listaContratos.size();
@@ -47,7 +46,7 @@ public class DashboardController {
         System.out.println("Iniciando generación de " + total + " Informes de Actividades...");
 
         for (Contrato c : listaContratos) {
-            String dni = c.getEmpleado().getDni();
+            String dni = c.getPersonal().getDni();
             String wordInf = carpetaTempWord + "INF_" + dni + ".docx";
             String pdfInf = carpetaTempPdf + "INF_" + dni + ".pdf";
 
@@ -62,7 +61,7 @@ public class DashboardController {
     }
     
     // Generar solo FM38
-    public void generarSoloFM38() {
+    public void generarSoloFM38(List<Contrato> listaContratos) {
         String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
         String carpetaTempWord = "C:/Users/inesq/Documents/informess/temp/words/";
         String carpetaTempPdf = "C:/Users/inesq/Documents/informess/temp/pdfs/";
@@ -73,16 +72,11 @@ public class DashboardController {
         new File(carpetaDestino + "Formato_FM38").mkdirs();
 
         GeneradorWord generador = new GeneradorWord();
-        List<Contrato> listaContratos = contratoDao.obtenerContratos();
-        
-        // Limitar a 10 contratos para pruebas
-        int limite = Math.min(10, listaContratos.size());
-        listaContratos = listaContratos.subList(0, limite);
 
         List<String> pdfsFM38 = new ArrayList<>();
 
         for (Contrato c : listaContratos) {
-            String dni = c.getEmpleado().getDni();
+            String dni = c.getPersonal().getDni();
             String wordFM = carpetaTempWord + "FM38_" + dni + ".docx";
             String pdfFM = carpetaTempPdf + "FM38_" + dni + ".pdf";
 
@@ -114,7 +108,7 @@ public class DashboardController {
         // Filtrar solo contratos con id_cargo = 5
         List<Contrato> listaContratos = new ArrayList<>();
         for (Contrato c : todosLosContratos) {
-            if (c.getCargo().getIdCargo() == 5) {
+            if (c.getPersonal().getCargoArea().getCargo().getIdCargo() == 5) {
                 listaContratos.add(c);
             }
         }
@@ -125,7 +119,7 @@ public class DashboardController {
         System.out.println("Iniciando generación de " + listaContratos.size() + " informes SUDIME (cargo ID 5)...");
 
         for (Contrato c : listaContratos) {
-            String dni = c.getEmpleado().getDni();
+            String dni = c.getPersonal().getDni();
 
             String wordInf = carpetaTempWord + "INF_" + dni + ".docx";
             String pdfInf = carpetaTempPdf + "INF_" + dni + ".pdf";

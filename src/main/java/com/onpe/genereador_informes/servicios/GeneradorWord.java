@@ -45,17 +45,14 @@ public class GeneradorWord {
             FileInputStream fis = new FileInputStream(rutaPlantilla);
             XWPFDocument documento = new XWPFDocument(fis);
 
-
-
-
-            String nombreCompleto = (contrato.getEmpleado().getApellidos() + " " + contrato.getEmpleado().getNombres()).toUpperCase();
-            String dni = contrato.getEmpleado().getDni();
-            String cargo = contrato.getCargo().getNombreCargo();
-            String area = contrato.getArea().getNombreArea();
+            String nombreCompleto = (contrato.getPersonal().getApellido() + " " + contrato.getPersonal().getNombre()).toUpperCase();
+            String dni = contrato.getPersonal().getDni();
+            String cargo = contrato.getPersonal().getCargoArea().getCargo().getNombreCargo();
+            String area = contrato.getPersonal().getCargoArea().getArea().getNombreArea();
             String num_contrato = contrato.getNumeroContrato();
             List<String> actividades = new ArrayList<>();
-            if (contrato.getCargo() != null && contrato.getCargo().getListaActividades() != null){
-                for (Actividad a : contrato.getCargo().getListaActividades()){
+            if (contrato.getPersonal().getCargoArea() != null && contrato.getPersonal().getCargoArea().getCargo() != null && contrato.getPersonal().getCargoArea().getCargo().getListaActividades() != null){
+                for (Actividad a : contrato.getPersonal().getCargoArea().getCargo().getListaActividades()){
                     actividades.add(a.getDescripcion());
                 }
             }
@@ -87,9 +84,9 @@ public class GeneradorWord {
             // Configurar ODPE
             String descripcionOdpe = "";
             String nombreOdpe = "";
-            if (contrato.getEmpleado().getOdpe() != null) {
+            if (contrato.getPersonal().getOdpe() != null) {
                 descripcionOdpe = " en la ODPE";
-                nombreOdpe = " " + contrato.getEmpleado().getOdpe().getNombreOdpe();
+                nombreOdpe = " " + contrato.getPersonal().getOdpe().getNombreOdpe();
             }
 
             //informe actividades
