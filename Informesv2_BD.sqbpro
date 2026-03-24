@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="Informesv2_BD.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="1"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2987"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="tb_informe" custom_title="0" dock_id="3" table="4,10:maintb_informe"/><dock_state state="000000ff00000000fd0000000100000002000003b500000387fc0100000003fb000000160064006f0063006b00420072006f00770073006500310100000000000005bb0000000000000000fb000000160064006f0063006b00420072006f00770073006500320100000000000005bb0000000000000000fb000000160064006f0063006b00420072006f00770073006500330100000000000003b50000011e00ffffff000002690000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="sqlite_sequence" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="119"/><column index="2" value="35"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_actividades" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="77"/><column index="2" value="91"/><column index="3" value="1038"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_area" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="51"/><column index="2" value="252"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_cargo" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort><column index="0" mode="0"/></sort><column_widths><column index="1" value="57"/><column index="2" value="465"/></column_widths><filter_values><column index="1" value="sup"/></filter_values><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_cargo_area" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="90"/><column index="2" value="57"/><column index="3" value="52"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_contratos" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="74"/><column index="2" value="244"/><column index="3" value="105"/><column index="4" value="95"/><column index="5" value="76"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_encargados" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="85"/><column index="2" value="241"/><column index="3" value="466"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_gerencia" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="74"/><column index="2" value="317"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_informe" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="69"/><column index="2" value="85"/><column index="3" value="76"/><column index="4" value="51"/><column index="5" value="35"/><column index="6" value="35"/><column index="7" value="109"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_odpe" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="53"/><column index="2" value="239"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="tb_personal" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort><column index="0" mode="0"/></sort><column_widths><column index="1" value="74"/><column index="2" value="158"/><column index="3" value="186"/><column index="4" value="221"/><column index="5" value="177"/><column index="6" value="75"/><column index="7" value="91"/><column index="8" value="131"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">-- Tabla ODPE
+CREATE TABLE tb_odpe (
+	id_odpe INTEGER PRIMARY KEY AUTOINCREMENT,
+	nombre_odpe VARCHAR(100) NOT NULL
+);
+
+-- Tabla encargados
+CREATE TABLE tb_encargados (
+	id_encargado INTEGER PRIMARY KEY AUTOINCREMENT,
+	nombre VARCHAR(100) NOT NULL,
+	cargo VARCHAR(100) NOT NULL
+);
+
+-- Tabla gerencia
+CREATE TABLE tb_gerencia (
+	id_gerencia INTEGER PRIMARY KEY AUTOINCREMENT,
+	nombre_gerencia VARCHAR(100) NOT NULL
+);
+
+-- Tabla cargo
+CREATE TABLE tb_cargo (
+	id_cargo INTEGER PRIMARY KEY AUTOINCREMENT,
+	nombre_cargo VARCHAR(100) NOT NULL
+);
+
+-- Tabla area
+CREATE TABLE tb_area (
+	id_area INTEGER PRIMARY KEY AUTOINCREMENT,
+	nombre_area VARCHAR(100) NOT NULL
+);
+
+--Tabla cargo_area
+CREATE TABLE tb_cargo_area (
+	id_cargo_area INTEGER PRIMARY KEY AUTOINCREMENT,
+	id_cargo INTEGER NOT NULL,
+	id_area INTEGER NOT NULL,
+	FOREIGN KEY (id_cargo) REFERENCES tb_cargo(id_cargo),
+	FOREIGN KEY (id_area) REFERENCES tb_area (id_area)
+);
+
+-- Tabla actividades
+CREATE TABLE tb_actividades (
+	id_actividad INTEGER PRIMARY KEY AUTOINCREMENT,
+	id_cargo_area INTEGER NOT NULL,
+	descripcion TEXT NOT NULL,
+	FOREIGN KEY (id_cargo_area) REFERENCES tb_cargo_area (id_cargo_area)
+);
+
+-- Table personal
+CREATE TABLE tb_personal (
+	id_personal INTEGER PRIMARY KEY AUTOINCREMENT,
+	dni CHAR(8) NOT NULL UNIQUE,
+	nombre VARCHAR(100) NOT NULL,
+	apellido VARCHAR(100) NOT NULL,
+	id_odpe INTEGER,
+	id_gerencia INTEGER NOT NULL,
+	id_cargo_area INTEGER NOT NULL,
+	estado VARCHAR(15) DEFAULT 'ACTIVO',
+	FOREIGN KEY (id_odpe) REFERENCES tb_odpe (id_odpe),
+	FOREIGN KEY (id_gerencia) REFERENCES tb_gerencia (id_gerencia),
+	FOREIGN KEY(id_cargo_area) REFERENCES tb_cargo_area(id_cargo_area)
+);
+
+-- Tabla contratos
+CREATE TABLE tb_contratos (
+	id_contrato INTEGER PRIMARY KEY AUTOINCREMENT,
+	numero_contrato VARCHAR(100) NOT NULL UNIQUE,
+	fecha_inicio DATE NOT NULL,
+	fecha_fin DATE NOT NULL,
+	id_personal INTEGER NOT NULL,
+	FOREIGN KEY (id_personal) REFERENCES tb_personal (id_personal)
+);
+
+-- Tabla informe
+CREATE TABLE tb_informe (
+	id_informe INTEGER PRIMARY KEY AUTOINCREMENT,
+	id_encargado INTEGER NOT NULL,
+	id_personal INTEGER NOT NULL,
+	periodo VARCHAR(100),
+	mes VARCHAR(20),
+	anio CHAR(4) CHECK(length(anio) = 4),
+	fecha_generacion DATE,
+	FOREIGN KEY (id_encargado) REFERENCES tb_encargados (id_encargado),
+	FOREIGN KEY (id_personal) REFERENCES tb_personal (id_personal)
+);
+
+
+SELECT id_contrato FROM tb_contratos c INNER JOIN tb_personal p ON c.id_personal = p.id_personal WHERE p.id_personal = ?;
+
+
+DELETE FROM tb_contratos;
+DELETE FROM sqlite_sequence WHERE name='tb_contratos';
+
+
+INSERT INTO tb_gerencia (nombre_gerencia)
+VALUES
+	(&quot;Gerencia de Gestión Electoral&quot;),
+	(&quot;Subgerencia de Producción Electoral&quot;);
+	
+
+INSERT INTO tb_encargados (nombre, cargo)
+VALUES
+	(&quot;JOSÉ EDILBERTO SAMAMÉ BLAS&quot;, &quot;Gerente de la Gerencia de Gestión Electoral&quot;),
+	(&quot;JUAN ANTONIO PHANG SÁNCHEZ&quot;, &quot;Gerente de la Gerencia de Gestión Electoral (e)&quot;)
+
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
