@@ -66,7 +66,7 @@ public class DashboardController {
     public void generarSoloFM38(List<Contrato> listaContratos) {
         String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
         String userHome = System.getProperty("user.home");
-        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generado_Informes" + File.separator;
+        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generador_Informes" + File.separator;
         String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
         String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
         String carpetaDestino = baseDir;
