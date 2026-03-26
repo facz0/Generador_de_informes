@@ -194,6 +194,8 @@ public class CargosView {
                 String estiloBase = "-fx-background-radius: 4; -fx-padding: 3 7; -fx-cursor: hand; -fx-font-size: 13px;";
                 btnEditar.setStyle("-fx-background-color: #ebf4ff; -fx-text-fill: #2b6cb0; " + estiloBase);
                 btnEliminar.setStyle("-fx-background-color: #fff5f5; -fx-text-fill: #c53030; " + estiloBase);
+                btnEliminar.setVisible(false);
+                btnEliminar.setManaged(false);
 
                 btnEditar.setOnAction(e -> {
                     String[] fila = getTableView().getItems().get(getIndex());

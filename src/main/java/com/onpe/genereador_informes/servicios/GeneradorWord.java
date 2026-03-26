@@ -70,18 +70,37 @@ public class GeneradorWord {
             LocalDate primerDiaMes = hoy.withDayOfMonth(1);
             LocalDate ultimoDiaMes = hoy.withDayOfMonth(hoy.lengthOfMonth());
 
-            LocalDate inicioInforme = contrato.getFechaInicio().isBefore(primerDiaMes)
-                    ? primerDiaMes
-                    : contrato.getFechaInicio();
+            LocalDate inicioInforme;
+            // Si inició en el mes anterior después del día 15, arrastrar esos días al mes actual
+            if (contrato.getFechaInicio().getMonth() != hoy.getMonth()
+                    && contrato.getFechaInicio().getDayOfMonth() > 15
+                    && contrato.getFechaInicio().getYear() == hoy.getYear()
+                    && contrato.getFechaInicio().getMonthValue() == hoy.getMonthValue() - 1) {
+                inicioInforme = contrato.getFechaInicio();
+            } else if (contrato.getFechaInicio().isBefore(primerDiaMes)) {
+                inicioInforme = primerDiaMes;
+            } else {
+                inicioInforme = contrato.getFechaInicio();
+            }
 
             LocalDate finInforme = contrato.getFechaFin().isAfter(ultimoDiaMes)
                     ? ultimoDiaMes
                     : contrato.getFechaFin();
             DateTimeFormatter diaFmt = DateTimeFormatter.ofPattern("dd");
             DateTimeFormatter mesAnioFmt = DateTimeFormatter.ofPattern("'DE' MMMM 'DE' yyyy", new Locale("es", "ES"));
-            String periodo = "DEL " + inicioInforme.format(diaFmt) +
-                    " AL " + finInforme.format(diaFmt) +
-                    " " + finInforme.format(mesAnioFmt).toUpperCase();
+            DateTimeFormatter diaMesFmt = DateTimeFormatter.ofPattern("dd 'DE' MMMM", new Locale("es", "ES"));
+            String periodo;
+            if (inicioInforme.getMonth() != finInforme.getMonth()) {
+                // Meses distintos: DEL 27 DE FEBRERO AL 31 DE MARZO DE 2026
+                periodo = "DEL " + inicioInforme.format(diaMesFmt).toUpperCase() +
+                        " AL " + finInforme.format(diaFmt) +
+                        " " + finInforme.format(mesAnioFmt).toUpperCase();
+            } else {
+                // Mismo mes: DEL 01 AL 31 DE MARZO DE 2026
+                periodo = "DEL " + inicioInforme.format(diaFmt) +
+                        " AL " + finInforme.format(diaFmt) +
+                        " " + finInforme.format(mesAnioFmt).toUpperCase();
+            }
             
             // Configurar ODPE
             String descripcionOdpe = "";

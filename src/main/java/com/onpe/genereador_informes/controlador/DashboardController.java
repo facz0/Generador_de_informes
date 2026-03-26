@@ -115,8 +115,7 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - MARZO.pdf");
-        return true;
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - MARZO.pdf");
     }
 
     public boolean generarFM38(List<Contrato> listaContratos) {
@@ -161,8 +160,7 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        unirPdfs(pdfs, carpetaDestino + "Formato_FM38/FORMATO FM38 - MARZO.pdf");
-        return true;
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/FORMATO FM38 - MARZO.pdf");
     }
 
     // ===== SUDIME =====
@@ -194,8 +192,7 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES.pdf");
-        return true;
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES.pdf");
     }
 
     public boolean generarFM38Sudime(List<Contrato> listaContratos) {
@@ -236,8 +233,7 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        unirPdfs(pdfs, carpetaDestino + "Formato_FM38/SUDIME - FORMATO FM38.pdf");
-        return true;
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/SUDIME - FORMATO FM38.pdf");
     }
 
     // ===== UTILIDADES =====
@@ -253,7 +249,7 @@ public class DashboardController {
         }
     }
 
-    private void unirPdfs(List<String> rutasPdf, String rutaSalida) {
+    private boolean unirPdfs(List<String> rutasPdf, String rutaSalida) {
         try {
             PDFMergerUtility merger = new PDFMergerUtility();
             merger.setDestinationFileName(rutaSalida);
@@ -261,8 +257,10 @@ public class DashboardController {
                 merger.addSource(new File(ruta));
             }
             merger.mergeDocuments(null);
+            return true;
         } catch (Exception e) {
             System.err.println("Error uniendo PDFs: " + e.getMessage());
+            return false;
         }
     }
 }

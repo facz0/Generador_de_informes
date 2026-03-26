@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -24,6 +25,12 @@ public class SudimeView {
     private BorderPane contenedor;
     private DashboardController controlador;
 
+    private ObservableList<Contrato> datosTabla = FXCollections.observableArrayList();
+    private FilteredList<Contrato> filteredData;
+    private VBox contenedorFiltros = new VBox(6);
+    private Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
+    private List<Contrato> datosVisibles = new java.util.ArrayList<>();
+
     public SudimeView(BorderPane contenedor, DashboardController controlador) {
         this.contenedor = contenedor;
         this.controlador = controlador;
@@ -31,9 +38,6 @@ public class SudimeView {
 
     public void mostrar() {
         contenedor.setTop(DashboardView.crearHeader("SUDIME", "Supervisores de Distribución de Material Electoral"));
-
-        ObservableList<Contrato> datos = FXCollections.observableArrayList();
-        Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
 
         // ===== TABLA =====
         TableView<Contrato> tabla = new TableView<>();
@@ -57,7 +61,11 @@ public class SudimeView {
                 setGraphic(chk);
             }
         });
-        chkTodos.setOnAction(e -> { boolean val = chkTodos.isSelected(); seleccion.values().forEach(p -> p.set(val)); tabla.refresh(); });
+        chkTodos.setOnAction(e -> {
+            boolean val = chkTodos.isSelected();
+            datosVisibles.forEach(c -> { seleccion.putIfAbsent(c, new SimpleBooleanProperty(false)); seleccion.get(c).set(val); });
+            tabla.refresh();
+        });
 
         TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
 
@@ -81,61 +89,28 @@ public class SudimeView {
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colContrato, colOdpe);
 
         List<Contrato> listaSudime = controlador.obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
-        datos.setAll(listaSudime);
+        datosTabla.setAll(listaSudime);
+        datosVisibles = new java.util.ArrayList<>(listaSudime);
 
         PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
         paginador.setDatos(listaSudime);
 
-        // ===== FILTROS =====
-        TextField txtDni = new TextField();
-        txtDni.setPromptText("DNI");
-        txtDni.setPrefWidth(110);
+        // ===== BARRA SUPERIOR CON FILTROS =====
+        contenedorFiltros.setPadding(new Insets(0, 24, 8, 24));
 
-        TextField txtNombre = new TextField();
-        txtNombre.setPromptText("Nombre");
-        txtNombre.setPrefWidth(180);
+        Button btnAgregarFiltro = DashboardView.crearBotonAccion("+ Agregar Filtro", "#2980b9");
+        btnAgregarFiltro.setOnAction(e -> agregarFiltroUI(paginador));
 
-        ComboBox<String> comboOdpe = crearComboFiltro(controlador.obtenerNombresOdpesSudime(), "ODPE", 220);
+        HBox topBar = new HBox(12);
+        topBar.setPadding(new Insets(16, 24, 8, 24));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.getChildren().add(btnAgregarFiltro);
 
-        Button btnFiltrar = DashboardView.crearBotonAccion("Filtrar", "#1D2B61");
-        Button btnLimpiar = new Button("Limpiar");
-        btnLimpiar.setStyle("-fx-background-color: transparent; -fx-text-fill: #718096; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-padding: 7 14; -fx-cursor: hand;");
-
-        HBox filtros = new HBox(10);
-        filtros.setPadding(new Insets(0, 0, 6, 0));
-        filtros.setAlignment(Pos.CENTER_LEFT);
-        filtros.getChildren().addAll(txtDni, txtNombre, comboOdpe);
-
-        HBox filtrosBotones = new HBox(10);
-        filtrosBotones.setPadding(new Insets(0, 0, 10, 0));
-        filtrosBotones.setAlignment(Pos.CENTER_LEFT);
-        filtrosBotones.getChildren().addAll(btnFiltrar, btnLimpiar);
-
-        btnFiltrar.setOnAction(e -> {
-            String dniVal = txtDni.getText().trim().toLowerCase();
-            String nombreVal = txtNombre.getText().trim().toLowerCase();
-            String odpeVal = comboOdpe.getValue() != null ? comboOdpe.getValue().toLowerCase() : comboOdpe.getEditor().getText().trim().toLowerCase();
-            List<Contrato> filtrados = listaSudime.stream().filter(c ->
-                (dniVal.isEmpty() || c.getPersonal().getDni().toLowerCase().contains(dniVal))
-                && (nombreVal.isEmpty() || (c.getPersonal().getNombre() + " " + c.getPersonal().getApellido()).toLowerCase().contains(nombreVal))
-                && (odpeVal.isEmpty() || (c.getPersonal().getOdpe() != null && c.getPersonal().getOdpe().getNombreOdpe().toLowerCase().contains(odpeVal)))
-            ).collect(java.util.stream.Collectors.toList());
-            datos.setAll(filtrados);
-            paginador.setDatos(filtrados);
-        });
-
-        btnLimpiar.setOnAction(e -> {
-            txtDni.clear(); txtNombre.clear();
-            comboOdpe.setValue(null); comboOdpe.getEditor().clear();
-            comboOdpe.setItems(FXCollections.observableArrayList(controlador.obtenerNombresOdpesSudime()));
-            datos.setAll(listaSudime);
-            paginador.setDatos(listaSudime);
-        });
-
-        VBox centro = new VBox(8);
-        centro.setPadding(new Insets(20, 24, 0, 24));
+        VBox centro = new VBox(0);
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(filtros, filtrosBotones, tabla, paginador.getControles());
+        VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
+        VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
+        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginador.getControles());
         contenedor.setCenter(centro);
 
         // ===== BOTTOM =====
@@ -146,73 +121,85 @@ public class SudimeView {
 
         Button btnInforme = DashboardView.crearBotonAccion("Generar Informe", "#27ae60");
         btnInforme.setOnAction(e -> {
-            List<Contrato> seleccionados = datos.stream()
+            List<Contrato> seleccionados = datosVisibles.stream()
                 .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
                 .collect(Collectors.toList());
             boolean confirmar = DashboardView.mostrarConfirmacion(
                 "Confirmar generación",
                 seleccionados.isEmpty()
-                    ? "¿Generar informes para todos los SUDIME?"
+                    ? "¿Generar informes para todos los SUDIME visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar informes para " + seleccionados.size() + " SUDIME seleccionado(s)?");
             if (!confirmar) return;
             boolean ok = controlador.generarInformesSudime(seleccionados.isEmpty() ? null : seleccionados);
             if (ok) DashboardView.mostrarAlerta("✅ Informes generados", "Informes SUDIME generados correctamente.");
-            else DashboardView.mostrarAlerta("⚠ Sin datos", "No hay contratos SUDIME para generar.");
+            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe SUDIME. Cierra el PDF si está abierto e intenta de nuevo.");
         });
 
         Button btnFM38 = DashboardView.crearBotonAccion("Generar FM38", "#2980b9");
         btnFM38.setOnAction(e -> {
-            List<Contrato> seleccionados = datos.stream()
+            List<Contrato> seleccionados = datosVisibles.stream()
                 .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
                 .collect(Collectors.toList());
             boolean confirmar = DashboardView.mostrarConfirmacion(
                 "Confirmar generación",
                 seleccionados.isEmpty()
-                    ? "¿Generar FM38 para todos los SUDIME?"
+                    ? "¿Generar FM38 para todos los SUDIME visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar FM38 para " + seleccionados.size() + " SUDIME seleccionado(s)?");
             if (!confirmar) return;
             boolean ok = controlador.generarFM38Sudime(seleccionados.isEmpty() ? null : seleccionados);
             if (ok) DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 SUDIME generados correctamente.");
-            else DashboardView.mostrarAlerta("⚠ Sin datos", "No hay contratos SUDIME para generar.");
+            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el FM38 SUDIME. Cierra el PDF si está abierto e intenta de nuevo.");
         });
 
         bottomBar.getChildren().addAll(btnInforme, btnFM38);
         contenedor.setBottom(bottomBar);
     }
 
-    private ComboBox<String> crearComboFiltro(List<String> opciones, String prompt, int ancho) {
-        ObservableList<String> listaCompleta = FXCollections.observableArrayList(opciones);
-        ComboBox<String> combo = new ComboBox<>(FXCollections.observableArrayList(listaCompleta));
-        combo.setEditable(true);
-        combo.setPromptText(prompt);
-        combo.setPrefWidth(ancho);
-        combo.setVisibleRowCount(10);
-        combo.setConverter(new javafx.util.StringConverter<>() {
-            public String toString(String s) { return s == null ? "" : s; }
-            public String fromString(String s) { return s; }
-        });
-        final boolean[] actualizando = {false};
-        combo.getEditor().textProperty().addListener((obs, anterior, nuevo) -> {
-            if (actualizando[0]) return;
-            String valorActual = combo.getValue();
-            if (valorActual != null && valorActual.equals(nuevo)) return;
-            if (nuevo == null || nuevo.isEmpty()) {
-                actualizando[0] = true;
-                combo.setValue(null);
-                combo.setItems(FXCollections.observableArrayList(listaCompleta));
-                actualizando[0] = false;
-                return;
+    private void agregarFiltroUI(PaginadorTabla<Contrato> paginador) {
+        HBox filaFiltro = new HBox(10);
+        filaFiltro.setAlignment(Pos.CENTER_LEFT);
+
+        ComboBox<String> comboColumna = new ComboBox<>(FXCollections.observableArrayList(
+                "DNI", "Nombre", "ODPE"));
+        comboColumna.setValue("DNI");
+        comboColumna.setStyle("-fx-padding: 4;");
+
+        TextField txtValor = new TextField();
+        txtValor.setPromptText("Valor a buscar...");
+        txtValor.setStyle("-fx-padding: 7;");
+
+        Button btnEliminar = new Button("✕");
+        btnEliminar.setStyle("-fx-background-color: #e53e3e; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;");
+
+        filaFiltro.getChildren().addAll(comboColumna, txtValor, btnEliminar);
+        contenedorFiltros.getChildren().add(filaFiltro);
+
+        btnEliminar.setOnAction(e -> { contenedorFiltros.getChildren().remove(filaFiltro); aplicarFiltros(paginador); });
+        comboColumna.setOnAction(e -> aplicarFiltros(paginador));
+        txtValor.textProperty().addListener((obs, o, n) -> aplicarFiltros(paginador));
+    }
+
+    private void aplicarFiltros(PaginadorTabla<Contrato> paginador) {
+        List<Contrato> filtrados = datosTabla.stream().filter(c -> {
+            for (javafx.scene.Node node : contenedorFiltros.getChildren()) {
+                if (!(node instanceof HBox)) continue;
+                HBox fila = (HBox) node;
+                @SuppressWarnings("unchecked")
+                ComboBox<String> combo = (ComboBox<String>) fila.getChildren().get(0);
+                TextField txt = (TextField) fila.getChildren().get(1);
+                String filtro = txt.getText().trim().toLowerCase();
+                if (filtro.isEmpty()) continue;
+                String valor = switch (combo.getValue()) {
+                    case "DNI"    -> c.getPersonal().getDni();
+                    case "Nombre" -> c.getPersonal().getNombre() + " " + c.getPersonal().getApellido();
+                    case "ODPE"   -> c.getPersonal().getOdpe() != null ? c.getPersonal().getOdpe().getNombreOdpe() : "";
+                    default -> "";
+                };
+                if (!valor.toLowerCase().contains(filtro)) return false;
             }
-            ObservableList<String> filtrados = listaCompleta.stream()
-                .filter(s -> s.toLowerCase().contains(nuevo.toLowerCase()))
-                .collect(java.util.stream.Collectors.toCollection(FXCollections::observableArrayList));
-            actualizando[0] = true;
-            combo.setItems(filtrados);
-            combo.getEditor().setText(nuevo);
-            combo.getEditor().positionCaret(nuevo.length());
-            actualizando[0] = false;
-            if (!filtrados.isEmpty()) combo.show();
-        });
-        return combo;
+            return true;
+        }).collect(java.util.stream.Collectors.toList());
+        datosVisibles = filtrados;
+        paginador.setDatos(filtrados);
     }
 }
