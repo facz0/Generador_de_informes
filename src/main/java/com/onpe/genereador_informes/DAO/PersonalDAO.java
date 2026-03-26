@@ -13,7 +13,8 @@ public class PersonalDAO {
         List<String[]> lista = new ArrayList<>();
         String sql = "SELECT p.id_personal, p.dni, p.nombre, p.apellido, p.estado, " +
                 "cg.nombre_cargo, a.nombre_area, g.nombre_gerencia, " +
-                "o.nombre_odpe, c.numero_contrato, c.fecha_inicio, c.fecha_fin " +
+                "o.nombre_odpe, c.numero_contrato, c.fecha_inicio, c.fecha_fin, " +
+                "p.id_cargo_area, ca.id_cargo, p.id_gerencia, p.id_odpe " +
                 "FROM tb_personal p " +
                 "INNER JOIN tb_cargo_area ca ON p.id_cargo_area = ca.id_cargo_area " +
                 "INNER JOIN tb_cargo cg ON ca.id_cargo = cg.id_cargo " +
@@ -33,18 +34,22 @@ public class PersonalDAO {
             ResultSet rs = st.executeQuery(sql);
             while (rs.next()) {
                 lista.add(new String[]{
-                    String.valueOf(rs.getInt("id_personal")),
-                    rs.getString("dni"),
-                    rs.getString("nombre"),
-                    rs.getString("apellido"),
-                    rs.getString("estado"),
-                    rs.getString("nombre_cargo"),
-                    rs.getString("nombre_area"),
-                    rs.getString("nombre_gerencia"),
-                    rs.getString("nombre_odpe") != null ? rs.getString("nombre_odpe") : "",
-                    rs.getString("numero_contrato") != null ? rs.getString("numero_contrato") : "SIN CONTRATO",
-                    rs.getString("fecha_inicio") != null ? rs.getString("fecha_inicio") : "",
-                    rs.getString("fecha_fin") != null ? rs.getString("fecha_fin") : ""
+                    String.valueOf(rs.getInt("id_personal")),   // [0]
+                    rs.getString("dni"),                         // [1]
+                    rs.getString("nombre"),                      // [2]
+                    rs.getString("apellido"),                    // [3]
+                    rs.getString("estado"),                      // [4]
+                    rs.getString("nombre_cargo"),                // [5]
+                    rs.getString("nombre_area"),                 // [6]
+                    rs.getString("nombre_gerencia"),             // [7]
+                    rs.getString("nombre_odpe") != null ? rs.getString("nombre_odpe") : "",  // [8]
+                    rs.getString("numero_contrato") != null ? rs.getString("numero_contrato") : "SIN CONTRATO", // [9]
+                    rs.getString("fecha_inicio") != null ? rs.getString("fecha_inicio") : "",  // [10]
+                    rs.getString("fecha_fin") != null ? rs.getString("fecha_fin") : "",        // [11]
+                    String.valueOf(rs.getInt("id_cargo_area")),  // [12]
+                    String.valueOf(rs.getInt("id_cargo")),       // [13]
+                    String.valueOf(rs.getInt("id_gerencia")),    // [14]
+                    rs.getString("id_odpe") != null ? String.valueOf(rs.getInt("id_odpe")) : "" // [15]
                 });
             }
             rs.close();

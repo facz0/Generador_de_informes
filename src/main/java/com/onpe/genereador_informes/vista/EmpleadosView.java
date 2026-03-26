@@ -16,6 +16,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.util.List;
+
 public class EmpleadosView {
 
     private BorderPane contenedor;
@@ -25,6 +27,7 @@ public class EmpleadosView {
     private FilteredList<String[]> filteredData;
     private VBox contenedorFiltros = new VBox(8);
     private TableView<String[]> tabla;
+    private PaginadorTabla<String[]> paginador;
 
     public EmpleadosView(BorderPane contenedor) {
         this.contenedor = contenedor;
@@ -56,13 +59,7 @@ public class EmpleadosView {
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
         tabla.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
-        filteredData = new FilteredList<>(datosTabla, p -> true);
-        SortedList<String[]> sortedData = new SortedList<>(filteredData);
-        sortedData.comparatorProperty().bind(tabla.comparatorProperty());
-        tabla.setItems(sortedData);
-
         TableColumn<String[], String> colNum = new TableColumn<>("N°");
-        colNum.prefWidthProperty().bind(tabla.widthProperty().multiply(0.03));
         colNum.setCellFactory(col -> new TableCell<String[], String>() {
             @Override
             public void updateItem(String item, boolean empty) {
@@ -77,15 +74,15 @@ public class EmpleadosView {
 
         tabla.getColumns().addAll(
                 colNum,
-                col("DNI", 0.07, 1),                     
-                col("Apellidos", 0.12, 3),                
-                col("Nombres", 0.12, 2),                  
-                col("Cargo", 0.20, 5),                    
-                col("Área", 0.12, 6),                     
-                col("N° Contrato", 0.07, 9),             
+                col("DNI", 0.07, 1),
+                col("Apellidos", 0.12, 3),
+                col("Nombres", 0.12, 2),
+                col("Cargo", 0.20, 5),
+                col("Área", 0.12, 6),
+                col("N° Contrato", 0.07, 9),
                 col("Fecha inicio de labores", 0.09, 10),
-                col("Fecha fin de labores", 0.09, 11),   
-                col("ODPE", 0.05, 8),                    
+                col("Fecha fin de labores", 0.09, 11),
+                col("ODPE", 0.05, 8),
                 col("Estado", 0.04, 4));
 
         // Doble click para editar
@@ -97,12 +94,15 @@ public class EmpleadosView {
             }
         });
 
+        paginador = new PaginadorTabla<>(tabla, 20);
         cargarTabla();
+        paginador.setDatos(datosTabla);
 
         VBox centro = new VBox(0);
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(topBar, contenedorFiltros, tabla);
-        VBox.setMargin(tabla, new Insets(0, 24, 16, 24));
+        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginador.getControles());
+        VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
+        VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
 
         contenedor.setCenter(centro);
 
@@ -196,6 +196,39 @@ public class EmpleadosView {
                 dpFechaInicio.setValue(java.time.LocalDate.parse(empleado[10]));
             if (!empleado[11].isEmpty())
                 dpFechaFin.setValue(java.time.LocalDate.parse(empleado[11]));
+
+            // Precargar cargo → dispara listener que carga áreas
+            String idCargoStr = empleado[13];
+            datosCargosList.stream()
+                .filter(c -> c[0].equals(idCargoStr))
+                .findFirst()
+                .ifPresent(cargo -> {
+                    comboCargo.setValue(cargo);
+                    // Cargar áreas del cargo y seleccionar la correcta
+                    controlador.cargarAreasPorCargo(Integer.parseInt(idCargoStr), datosAreasFiltradas);
+                    comboArea.setDisable(false);
+                    String idCargoAreaStr = empleado[12];
+                    datosAreasFiltradas.stream()
+                        .filter(a -> a[0].equals(idCargoAreaStr))
+                        .findFirst()
+                        .ifPresent(area -> {
+                            comboArea.setValue(area);
+                            // Si es SUDIME (id_cargo_area=58), habilitar ODPE
+                            if (idCargoAreaStr.equals("58") && !empleado[15].isEmpty()) {
+                                comboOdpe.setDisable(false);
+                                datosOdpe.stream()
+                                    .filter(o -> o[0].equals(empleado[15]))
+                                    .findFirst()
+                                    .ifPresent(comboOdpe::setValue);
+                            }
+                        });
+                });
+
+            // Precargar gerencia
+            datosGerencia.stream()
+                .filter(g -> g[0].equals(empleado[14]))
+                .findFirst()
+                .ifPresent(comboGerencia::setValue);
         }
 
         Label lblMsg = new Label("");
@@ -315,47 +348,37 @@ public class EmpleadosView {
     }
 
     private void aplicarFiltros() {
-        if (filteredData == null) return;
-        filteredData.setPredicate(row -> {
+        if (paginador == null) return;
+        List<String[]> filtrados = datosTabla.stream().filter(row -> {
             for (javafx.scene.Node node : contenedorFiltros.getChildren()) {
-                if (node instanceof HBox) {
-                    HBox fila = (HBox) node;
-                    @SuppressWarnings("unchecked")
-                    ComboBox<String> combo = (ComboBox<String>) fila.getChildren().get(0);
-                    TextField txt = (TextField) fila.getChildren().get(1);
-
-                    String columna = combo.getValue();
-                    String filtro = txt.getText().trim().toLowerCase();
-
-                    if (filtro.isEmpty()) continue;
-
-                    int idx = 1; 
-                    switch (columna) {
-                        case "DNI": idx = 1; break;
-                        case "Nombres": idx = 2; break;
-                        case "Apellidos": idx = 3; break;
-                        case "Estado": idx = 4; break;
-                        case "Cargo": idx = 5; break;
-                        case "Área": idx = 6; break;
-                    }
-
-                    String valorCelda = row[idx] == null ? "" : row[idx].toLowerCase();
-
-                    if (columna.equals("DNI") || columna.equals("Nombres") || columna.equals("Apellidos")
-                            || columna.equals("Cargo") || columna.equals("Área")) {
-                        if (!valorCelda.startsWith(filtro)) return false;
-                    } else {
-                        if (!valorCelda.contains(filtro)) return false;
-                    }
-                }
+                if (!(node instanceof HBox)) continue;
+                HBox fila = (HBox) node;
+                @SuppressWarnings("unchecked")
+                ComboBox<String> combo = (ComboBox<String>) fila.getChildren().get(0);
+                TextField txt = (TextField) fila.getChildren().get(1);
+                String columna = combo.getValue();
+                String filtro = txt.getText().trim().toLowerCase();
+                if (filtro.isEmpty()) continue;
+                int idx = switch (columna) {
+                    case "DNI"      -> 1;
+                    case "Nombres"  -> 2;
+                    case "Apellidos"-> 3;
+                    case "Estado"   -> 4;
+                    case "Cargo"    -> 5;
+                    case "Área"     -> 6;
+                    default -> 1;
+                };
+                String valor = row[idx] == null ? "" : row[idx].toLowerCase();
+                if (!valor.contains(filtro)) return false;
             }
             return true;
-        });
+        }).collect(java.util.stream.Collectors.toList());
+        paginador.setDatos(filtrados);
     }
 
     private void cargarTabla() {
-        // Pedimos los datos al controlador en lugar del DAO directo
         datosTabla.setAll(controlador.obtenerTodosLosEmpleados());
+        if (paginador != null) paginador.setDatos(datosTabla);
     }
 
     private void agregarFila(GridPane grid, int fila, String etiqueta, Control control) {
@@ -395,9 +418,11 @@ public class EmpleadosView {
     }
 
     private ComboBox<String[]> crearCombo(ObservableList<String[]> datos, int idx1, int idx2, String sep) {
-        ComboBox<String[]> combo = new ComboBox<>(datos);
+        ObservableList<String[]> listaCompleta = FXCollections.observableArrayList(datos);
+        ComboBox<String[]> combo = new ComboBox<>(FXCollections.observableArrayList(listaCompleta));
         combo.setMaxWidth(Double.MAX_VALUE);
         combo.setEditable(true);
+        combo.setVisibleRowCount(10);
 
         combo.setConverter(new javafx.util.StringConverter<>() {
             public String toString(String[] item) {
@@ -410,31 +435,49 @@ public class EmpleadosView {
         combo.setCellFactory(lv -> new ListCell<>() {
             protected void updateItem(String[] item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    return;
-                }
+                if (empty || item == null) { setText(null); return; }
                 setText(idx2 == -1 ? item[idx1] : item[idx1] + sep + item[idx2]);
             }
         });
 
-        combo.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null || combo.getValue() != null) return;
-            String filtro = newVal.toLowerCase();
-            ObservableList<String[]> filtrados = FXCollections.observableArrayList();
-            for (String[] item : datos) {
-                String texto = idx2 == -1 ? item[idx1] : item[idx1] + sep + item[idx2];
-                if (texto.toLowerCase().contains(filtro)) filtrados.add(item);
+        final boolean[] actualizando = {false};
+        combo.getEditor().textProperty().addListener((obs, anterior, nuevo) -> {
+            if (actualizando[0]) return;
+            // Si hay valor seleccionado y coincide con el texto, no filtrar
+            String[] valorActual = combo.getValue();
+            if (valorActual != null) {
+                String textoValor = idx2 == -1 ? valorActual[idx1] : valorActual[idx1] + sep + valorActual[idx2];
+                if (textoValor.equals(nuevo)) return;
             }
+            // Cuando borra todo, restaurar lista completa y limpiar selección
+            if (nuevo == null || nuevo.isEmpty()) {
+                actualizando[0] = true;
+                combo.setValue(null);
+                combo.setItems(FXCollections.observableArrayList(listaCompleta));
+                actualizando[0] = false;
+                return;
+            }
+            // Filtrar
+            String filtro = nuevo.toLowerCase();
+            ObservableList<String[]> filtrados = listaCompleta.stream()
+                .filter(item -> {
+                    String texto = idx2 == -1 ? item[idx1] : item[idx1] + sep + item[idx2];
+                    return texto.toLowerCase().contains(filtro);
+                })
+                .collect(javafx.collections.FXCollections::observableArrayList,
+                         ObservableList::add, ObservableList::addAll);
+            actualizando[0] = true;
             combo.setItems(filtrados);
+            combo.getEditor().setText(nuevo);
+            combo.getEditor().positionCaret(nuevo.length());
+            actualizando[0] = false;
             if (!filtrados.isEmpty()) combo.show();
         });
 
-        combo.focusedProperty().addListener((obs, oldVal, focused) -> {
-            if (!focused && combo.getValue() == null) {
-                combo.setItems(datos);
-                combo.getEditor().clear();
-            }
+        // Sincronizar listaCompleta cuando cambian los datos externos (ej: áreas por cargo)
+        datos.addListener((javafx.collections.ListChangeListener<String[]>) c -> {
+            listaCompleta.setAll(datos);
+            if (combo.getValue() == null) combo.setItems(FXCollections.observableArrayList(listaCompleta));
         });
 
         return combo;

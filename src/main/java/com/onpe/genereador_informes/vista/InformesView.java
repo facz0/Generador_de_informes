@@ -1,0 +1,189 @@
+package com.onpe.genereador_informes.vista;
+
+import com.onpe.genereador_informes.controlador.DashboardController;
+import com.onpe.genereador_informes.model.Contrato;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class InformesView {
+
+    private BorderPane contenedor;
+    private DashboardController controlador;
+
+    private ObservableList<Contrato> datosTabla = FXCollections.observableArrayList();
+    private FilteredList<Contrato> filteredData;
+    private VBox contenedorFiltros = new VBox(6);
+    private Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
+    private List<Contrato> datosVisibles = new java.util.ArrayList<>();
+
+    public InformesView(BorderPane contenedor, DashboardController controlador) {
+        this.contenedor = contenedor;
+        this.controlador = controlador;
+    }
+
+    public void mostrar() {
+        contenedor.setTop(DashboardView.crearHeader("Informes de Actividades", "Genera los informes de actividades para los colaboradores seleccionados"));
+
+        // ===== TABLA =====
+        TableView<Contrato> tabla = new TableView<>();
+        tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
+
+        CheckBox chkTodos = new CheckBox();
+        TableColumn<Contrato, Boolean> colCheck = new TableColumn<>();
+        colCheck.setGraphic(chkTodos);
+        colCheck.setPrefWidth(40);
+        colCheck.setCellValueFactory(cell -> {
+            seleccion.putIfAbsent(cell.getValue(), new SimpleBooleanProperty(false));
+            return seleccion.get(cell.getValue());
+        });
+        colCheck.setCellFactory(col -> new TableCell<>() {
+            private final CheckBox chk = new CheckBox();
+            { chk.setOnAction(e -> { Contrato c = getTableView().getItems().get(getIndex()); seleccion.get(c).set(chk.isSelected()); }); }
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) { setGraphic(null); return; }
+                chk.setSelected(item != null && item);
+                setGraphic(chk);
+            }
+        });
+        chkTodos.setOnAction(e -> {
+            boolean val = chkTodos.isSelected();
+            datosVisibles.forEach(c -> { seleccion.putIfAbsent(c, new SimpleBooleanProperty(false)); seleccion.get(c).set(val); });
+            tabla.refresh();
+        });
+
+        TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
+        colNombre.setPrefWidth(280);
+        colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getApellido() + " " + cell.getValue().getPersonal().getNombre()));
+
+        TableColumn<Contrato, String> colDni = new TableColumn<>("DNI");
+        colDni.setPrefWidth(100);
+        colDni.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getDni()));
+
+        TableColumn<Contrato, String> colCargo = new TableColumn<>("Cargo");
+        colCargo.setPrefWidth(250);
+        colCargo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getCargoArea().getCargo().getNombreCargo()));
+
+        TableColumn<Contrato, String> colGerencia = new TableColumn<>("Gerencia");
+        colGerencia.setPrefWidth(200);
+        colGerencia.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getGerencia().getNombreGerencia()));
+
+        TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
+        tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
+
+        List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla();
+        datosTabla.setAll(todosLosDatos);
+        datosVisibles = new java.util.ArrayList<>(todosLosDatos);
+        filteredData = new FilteredList<>(datosTabla, p -> true);
+
+        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
+        paginador.setDatos(todosLosDatos);
+
+        // ===== BARRA SUPERIOR CON FILTROS =====
+        contenedorFiltros.setPadding(new Insets(0, 24, 8, 24));
+
+        Button btnAgregarFiltro = DashboardView.crearBotonAccion("+ Agregar Filtro", "#2980b9");
+        btnAgregarFiltro.setOnAction(e -> agregarFiltroUI(paginador));
+
+        HBox topBar = new HBox(12);
+        topBar.setPadding(new Insets(16, 24, 8, 24));
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.getChildren().add(btnAgregarFiltro);
+
+        VBox centro = new VBox(0);
+        centro.setPadding(new Insets(0, 0, 0, 0));
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+        VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
+        VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
+        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginador.getControles());
+        contenedor.setCenter(centro);
+
+        // ===== BOTTOM =====
+        HBox bottomBar = new HBox(12);
+        bottomBar.setPadding(new Insets(12, 24, 12, 24));
+        bottomBar.setAlignment(Pos.CENTER_RIGHT);
+        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
+
+        Button btnGenerar = DashboardView.crearBotonAccion("Generar Informes", "#27ae60");
+        btnGenerar.setOnAction(e -> {
+            List<Contrato> seleccionados = datosVisibles.stream()
+                .filter(c -> seleccion.containsKey(c) && seleccion.get(c).get())
+                .collect(Collectors.toList());
+            boolean confirmar = DashboardView.mostrarConfirmacion(
+                "Confirmar generación",
+                seleccionados.isEmpty()
+                    ? "¿Generar informes para todos los colaboradores visibles (" + datosVisibles.size() + ")?"
+                    : "¿Generar informes para " + seleccionados.size() + " colaborador(es) seleccionado(s)?");
+            if (!confirmar) return;
+            boolean ok = controlador.generarInformes(seleccionados.isEmpty() ? null : seleccionados);
+            if (ok) DashboardView.mostrarAlerta("✅ Informes generados", "Informes generados correctamente.");
+            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe. Cierra el PDF si está abierto e intenta de nuevo.");
+        });
+
+        bottomBar.getChildren().add(btnGenerar);
+        contenedor.setBottom(bottomBar);
+    }
+
+    private void agregarFiltroUI(PaginadorTabla<Contrato> paginador) {
+        HBox filaFiltro = new HBox(10);
+        filaFiltro.setAlignment(Pos.CENTER_LEFT);
+
+        ComboBox<String> comboColumna = new ComboBox<>(FXCollections.observableArrayList(
+                "DNI", "Nombre", "Cargo", "Gerencia", "Área"));
+        comboColumna.setValue("DNI");
+        comboColumna.setStyle("-fx-padding: 4;");
+
+        TextField txtValor = new TextField();
+        txtValor.setPromptText("Valor a buscar...");
+        txtValor.setStyle("-fx-padding: 7;");
+
+        Button btnEliminar = new Button("✕");
+        btnEliminar.setStyle("-fx-background-color: #e53e3e; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;");
+
+        filaFiltro.getChildren().addAll(comboColumna, txtValor, btnEliminar);
+        contenedorFiltros.getChildren().add(filaFiltro);
+
+        btnEliminar.setOnAction(e -> { contenedorFiltros.getChildren().remove(filaFiltro); aplicarFiltros(paginador); });
+        comboColumna.setOnAction(e -> aplicarFiltros(paginador));
+        txtValor.textProperty().addListener((obs, o, n) -> aplicarFiltros(paginador));
+    }
+
+    private void aplicarFiltros(PaginadorTabla<Contrato> paginador) {
+        List<Contrato> filtrados = datosTabla.stream().filter(c -> {
+            for (javafx.scene.Node node : contenedorFiltros.getChildren()) {
+                if (!(node instanceof HBox)) continue;
+                HBox fila = (HBox) node;
+                @SuppressWarnings("unchecked")
+                ComboBox<String> combo = (ComboBox<String>) fila.getChildren().get(0);
+                TextField txt = (TextField) fila.getChildren().get(1);
+                String filtro = txt.getText().trim().toLowerCase();
+                if (filtro.isEmpty()) continue;
+                String valor = switch (combo.getValue()) {
+                    case "DNI"      -> c.getPersonal().getDni();
+                    case "Nombre"   -> c.getPersonal().getNombre() + " " + c.getPersonal().getApellido();
+                    case "Cargo"    -> c.getPersonal().getCargoArea().getCargo().getNombreCargo();
+                    case "Gerencia" -> c.getPersonal().getGerencia().getNombreGerencia();
+                    case "Área"     -> c.getPersonal().getCargoArea().getArea().getNombreArea();
+                    default -> "";
+                };
+                if (!valor.toLowerCase().contains(filtro)) return false;
+            }
+            return true;
+        }).collect(java.util.stream.Collectors.toList());
+        datosVisibles = filtrados;
+        paginador.setDatos(filtrados);
+    }
+}

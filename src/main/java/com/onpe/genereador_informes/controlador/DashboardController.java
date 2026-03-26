@@ -8,156 +8,239 @@ import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class DashboardController {
 
+    private static final int ID_CARGO_AREA_SUDIME = 58;
+
+    private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "Generador_Informes" + File.separator;
+    private static final String BASE_DIR_SUDIME = BASE_DIR + "SUDIME" + File.separator;
+
     private ContratoDao contratoDao;
 
-    public DashboardController(){
+    public DashboardController() {
         this.contratoDao = new ContratoDao();
     }
 
-    public List<Contrato> obtenerDatosParaTabla(){
-        return contratoDao.obtenerContratos();
+    public List<Contrato> obtenerContratosPorCargoArea(int idCargoArea) {
+        return contratoDao.obtenerContratos().stream()
+            .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() == idCargoArea)
+            .collect(Collectors.toList());
     }
-    
-    // Generar solo Informes de Actividades
-    public void generarSoloInformesActividades(List<Contrato> listaContratos) {
-        String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        String userHome = System.getProperty("user.home");
-        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generado_Informes" + File.separator;
-        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
-        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
-        String carpetaDestino = baseDir;
+
+    public List<Contrato> obtenerDatosParaTabla() {
+        return contratoDao.obtenerContratos().stream()
+            .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+            .collect(Collectors.toList());
+    }
+
+    public List<String> obtenerNombresCargos() {
+        return contratoDao.obtenerContratos().stream()
+            .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+            .map(c -> c.getPersonal().getCargoArea().getCargo().getNombreCargo())
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+
+    public List<String> obtenerNombresAreas() {
+        return new com.onpe.genereador_informes.DAO.AreaDAO().obtenerTodas()
+            .stream().map(a -> a.getNombreArea()).collect(Collectors.toList());
+    }
+
+    public List<String> obtenerNombresGerencias() {
+        List<String> lista = new ArrayList<>();
+        String sql = "SELECT nombre_gerencia FROM tb_gerencia ORDER BY nombre_gerencia";
+        try {
+            java.sql.ResultSet rs = com.onpe.genereador_informes.database.Conexion.obtenerConexion()
+                .createStatement().executeQuery(sql);
+            while (rs.next()) lista.add(rs.getString(1));
+            rs.close();
+        } catch (Exception e) {
+            System.err.println("Error al obtener gerencias: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    public List<Contrato> filtrarContratos(String dni, String nombre, String cargo, String gerencia, String area) {
+        return contratoDao.obtenerContratos().stream()
+            .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+            .filter(c ->
+                (dni == null || dni.isEmpty() || c.getPersonal().getDni().toLowerCase().contains(dni.toLowerCase()))
+                && (nombre == null || nombre.isEmpty() || (c.getPersonal().getNombre() + " " + c.getPersonal().getApellido()).toLowerCase().contains(nombre.toLowerCase()))
+                && (cargo == null || cargo.isEmpty() || c.getPersonal().getCargoArea().getCargo().getNombreCargo().toLowerCase().contains(cargo.toLowerCase()))
+                && (gerencia == null || gerencia.isEmpty() || c.getPersonal().getGerencia().getNombreGerencia().toLowerCase().contains(gerencia.toLowerCase()))
+                && (area == null || area.isEmpty() || c.getPersonal().getCargoArea().getArea().getNombreArea().toLowerCase().contains(area.toLowerCase()))
+            ).collect(Collectors.toList());
+    }
+
+    public List<String> obtenerNombresOdpesSudime() {
+        return contratoDao.obtenerContratos().stream()
+            .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() == ID_CARGO_AREA_SUDIME)
+            .filter(c -> c.getPersonal().getOdpe() != null)
+            .map(c -> c.getPersonal().getOdpe().getNombreOdpe())
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+
+    // ===== INFORMES GENERALES (excluye SUDIME) =====
+
+    public boolean generarInformes(List<Contrato> listaContratos) {
+        String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
+        String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR;
+
+        if (listaContratos == null || listaContratos.isEmpty()) {
+            listaContratos = obtenerDatosParaTabla();
+        } else {
+            listaContratos = listaContratos.stream()
+                .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+                .collect(Collectors.toList());
+        }
+        if (listaContratos.isEmpty()) return false;
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
         new File(carpetaDestino + "Informes_Actividades").mkdirs();
 
         GeneradorWord generador = new GeneradorWord();
-        
-        // SIN LÍMITE - Generar todos los informes
-        int total = listaContratos.size();
-
-        List<String> pdfsInformes = new ArrayList<>();
-
-        System.out.println("Iniciando generación de " + total + " Informes de Actividades...");
+        List<String> pdfs = new ArrayList<>();
 
         for (Contrato c : listaContratos) {
             String dni = c.getPersonal().getDni();
-            String wordInf = carpetaTempWord + "INF_" + dni + ".docx";
-            String pdfInf = carpetaTempPdf + "INF_" + dni + ".pdf";
-
-            generador.generarDocumento(c, rutaPlantillaInf, wordInf);
-            convertirWordAPdfConSpire(wordInf, pdfInf);
-            pdfsInformes.add(pdfInf);
+            String word = carpetaTempWord + "INF_" + dni + ".docx";
+            String pdf  = carpetaTempPdf  + "INF_" + dni + ".pdf";
+            generador.generarDocumento(c, rutaPlantilla, word);
+            convertirWordAPdfConSpire(word, pdf);
+            pdfs.add(pdf);
         }
 
-        System.out.println("Generando informe consolidado...");
-        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
-        unirPdfs(pdfsInformes, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - " + mesActual + ".pdf");
-        System.out.println("✅ Informes de Actividades generados correctamente");
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - MARZO.pdf");
     }
-    
-    // Generar solo FM38
-    public void generarSoloFM38(List<Contrato> listaContratos) {
-        String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
-        String userHome = System.getProperty("user.home");
-        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generador_Informes" + File.separator;
-        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
-        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
-        String carpetaDestino = baseDir;
+
+    public boolean generarFM38(List<Contrato> listaContratos) {
+        String rutaPlantilla   = "plantillas/FM38_formato.docx";
+        String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR;
+
+        if (listaContratos == null || listaContratos.isEmpty()) {
+            listaContratos = obtenerDatosParaTabla();
+        } else {
+            listaContratos = listaContratos.stream()
+                .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+                .collect(Collectors.toList());
+        }
+        if (listaContratos.isEmpty()) return false;
+
+        listaContratos = listaContratos.stream()
+            .sorted((a, b) -> {
+                try {
+                    String[] pa = a.getNumeroContrato().split("-");
+                    String[] pb = b.getNumeroContrato().split("-");
+                    return Integer.compare(Integer.parseInt(pa[2].trim()), Integer.parseInt(pb[2].trim()));
+                } catch (Exception e) {
+                    return a.getNumeroContrato().compareTo(b.getNumeroContrato());
+                }
+            }).collect(Collectors.toList());
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
         new File(carpetaDestino + "Formato_FM38").mkdirs();
 
         GeneradorWord generador = new GeneradorWord();
-
-        List<String> pdfsFM38 = new ArrayList<>();
+        List<String> pdfs = new ArrayList<>();
 
         for (Contrato c : listaContratos) {
             String dni = c.getPersonal().getDni();
-            String wordFM = carpetaTempWord + "FM38_" + dni + ".docx";
-            String pdfFM = carpetaTempPdf + "FM38_" + dni + ".pdf";
-
-            generador.generarDocumento(c, rutaPlantillaFM38, wordFM);
-            convertirWordAPdfConSpire(wordFM, pdfFM);
-            pdfsFM38.add(pdfFM);
+            String word = carpetaTempWord + "FM38_" + dni + ".docx";
+            String pdf  = carpetaTempPdf  + "FM38_" + dni + ".pdf";
+            generador.generarDocumento(c, rutaPlantilla, word);
+            convertirWordAPdfConSpire(word, pdf);
+            pdfs.add(pdf);
         }
 
-        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
-        unirPdfs(pdfsFM38, carpetaDestino + "Formato_FM38/FORMATO fm38 - " + mesActual + ".pdf");
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/FORMATO FM38 - MARZO.pdf");
     }
 
-    public void generarTodosLosInformes() {
-        String rutaPlantillaInf = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        String rutaPlantillaFM38 = "plantillas/FM38_formato.docx";
-        
-        String userHome = System.getProperty("user.home");
-        String baseDir = userHome + File.separator + "Documents" + File.separator + "Generados" + File.separator;
-        String carpetaTempWord = baseDir + "temp" + File.separator + "words" + File.separator;
-        String carpetaTempPdf = baseDir + "temp" + File.separator + "pdfs" + File.separator;
-        String carpetaDestino = baseDir;
-        String carpetaSUDIME = baseDir + "SUDIME" + File.separator;
+    // ===== SUDIME =====
+
+    public boolean generarInformesSudime(List<Contrato> listaContratos) {
+        String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
+        String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR_SUDIME;
+
+        if (listaContratos == null || listaContratos.isEmpty()) {
+            listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
+        }
+        if (listaContratos.isEmpty()) return false;
 
         new File(carpetaTempWord).mkdirs();
         new File(carpetaTempPdf).mkdirs();
-        new File(carpetaSUDIME + "Informes_Actividades").mkdirs();
-        new File(carpetaSUDIME + "Formato_FM38").mkdirs();
+        new File(carpetaDestino + "Informes_Actividades").mkdirs();
 
         GeneradorWord generador = new GeneradorWord();
-        List<Contrato> todosLosContratos = contratoDao.obtenerContratos();
-        
-        // Filtrar solo contratos con id_cargo = 5
-        List<Contrato> listaContratos = new ArrayList<>();
-        for (Contrato c : todosLosContratos) {
-            if (c.getPersonal().getCargoArea().getCargo().getIdCargo() == 5) {
-                listaContratos.add(c);
-            }
-        }
-
-        List<String> pdfsInformes = new ArrayList<>();
-        List<String> pdfsFM38 = new ArrayList<>();
-
-        System.out.println("Iniciando generación de " + listaContratos.size() + " informes SUDIME (cargo ID 5)...");
+        List<String> pdfs = new ArrayList<>();
 
         for (Contrato c : listaContratos) {
             String dni = c.getPersonal().getDni();
-
-            String wordInf = carpetaTempWord + "INF_" + dni + ".docx";
-            String pdfInf = carpetaTempPdf + "INF_" + dni + ".pdf";
-
-            String wordFM = carpetaTempWord + "FM38_" + dni + ".docx";
-            String pdfFM = carpetaTempPdf + "FM38_" + dni + ".pdf";
-
-            // 1. Generar Word con Apache POI
-            generador.generarDocumento(c, rutaPlantillaInf, wordInf);
-            generador.generarDocumento(c, rutaPlantillaFM38, wordFM);
-
-            // 2. Convertir a PDF con Spire
-            convertirWordAPdfConSpire(wordInf, pdfInf);
-            convertirWordAPdfConSpire(wordFM, pdfFM);
-
-            pdfsInformes.add(pdfInf);
-            pdfsFM38.add(pdfFM);
+            String word = carpetaTempWord + "INF_" + dni + ".docx";
+            String pdf  = carpetaTempPdf  + "INF_" + dni + ".pdf";
+            generador.generarDocumento(c, rutaPlantilla, word);
+            convertirWordAPdfConSpire(word, pdf);
+            pdfs.add(pdf);
         }
 
-        System.out.println("Generando informes consolidados SUDIME...");
-
-        // 3. Unir en carpeta SUDIME
-        String mesActual = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM", new Locale("es", "ES"))).toUpperCase();
-        unirPdfs(pdfsInformes, carpetaSUDIME + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES - " + mesActual + ".pdf");
-        unirPdfs(pdfsFM38, carpetaSUDIME + "Formato_FM38/SUDIME - FORMATO fm38 - " + mesActual + ".pdf");
-
-        System.out.println("PROCESO TERMINADO");
-
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES.pdf");
     }
 
-    //conversión
+    public boolean generarFM38Sudime(List<Contrato> listaContratos) {
+        String rutaPlantilla   = "plantillas/FM38_formato.docx";
+        String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR_SUDIME;
+
+        if (listaContratos == null || listaContratos.isEmpty()) {
+            listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
+        }
+        if (listaContratos.isEmpty()) return false;
+
+        listaContratos = listaContratos.stream()
+            .sorted((a, b) -> {
+                try {
+                    String[] pa = a.getNumeroContrato().split("-");
+                    String[] pb = b.getNumeroContrato().split("-");
+                    return Integer.compare(Integer.parseInt(pa[2].trim()), Integer.parseInt(pb[2].trim()));
+                } catch (Exception e) {
+                    return a.getNumeroContrato().compareTo(b.getNumeroContrato());
+                }
+            }).collect(Collectors.toList());
+
+        new File(carpetaTempWord).mkdirs();
+        new File(carpetaTempPdf).mkdirs();
+        new File(carpetaDestino + "Formato_FM38").mkdirs();
+
+        GeneradorWord generador = new GeneradorWord();
+        List<String> pdfs = new ArrayList<>();
+
+        for (Contrato c : listaContratos) {
+            String dni = c.getPersonal().getDni();
+            String word = carpetaTempWord + "FM38_" + dni + ".docx";
+            String pdf  = carpetaTempPdf  + "FM38_" + dni + ".pdf";
+            generador.generarDocumento(c, rutaPlantilla, word);
+            convertirWordAPdfConSpire(word, pdf);
+            pdfs.add(pdf);
+        }
+
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/SUDIME - FORMATO FM38.pdf");
+    }
+
+    // ===== UTILIDADES =====
+
     private void convertirWordAPdfConSpire(String rutaWord, String rutaPdf) {
         try {
             com.spire.doc.Document doc = new com.spire.doc.Document();
@@ -169,8 +252,7 @@ public class DashboardController {
         }
     }
 
-    //union
-    private void unirPdfs(List<String> rutasPdf, String rutaSalida) {
+    private boolean unirPdfs(List<String> rutasPdf, String rutaSalida) {
         try {
             PDFMergerUtility merger = new PDFMergerUtility();
             merger.setDestinationFileName(rutaSalida);
@@ -178,10 +260,10 @@ public class DashboardController {
                 merger.addSource(new File(ruta));
             }
             merger.mergeDocuments(null);
+            return true;
         } catch (Exception e) {
-            System.err.println("❌ Error uniendo PDFs: " + e.getMessage());
+            System.err.println("Error uniendo PDFs: " + e.getMessage());
+            return false;
         }
     }
-
 }
-

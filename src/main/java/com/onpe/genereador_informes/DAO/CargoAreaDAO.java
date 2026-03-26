@@ -67,4 +67,36 @@ public class CargoAreaDAO {
         }
         return false;
     }
+
+    public boolean actualizar(int idCargoArea, int idCargo, int idArea) {
+        String sql = "UPDATE tb_cargo_area SET id_cargo = ?, id_area = ? WHERE id_cargo_area = ?";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, idCargo);
+            ps.setInt(2, idArea);
+            ps.setInt(3, idCargoArea);
+            ps.executeUpdate();
+            ps.close();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar asociación: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean eliminar(int idCargoArea) {
+        String sql = "DELETE FROM tb_cargo_area WHERE id_cargo_area = ?";
+        try {
+            Connection conn = Conexion.obtenerConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, idCargoArea);
+            ps.executeUpdate();
+            ps.close();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error al eliminar asociación: " + e.getMessage());
+        }
+        return false;
+    }
 }
