@@ -100,6 +100,9 @@ public class DashboardController {
                 .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
                 .collect(Collectors.toList());
         }
+        listaContratos = listaContratos.stream()
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
+            .collect(Collectors.toList());
         if (listaContratos.isEmpty()) return false;
 
         new File(carpetaTempWord).mkdirs();
@@ -134,6 +137,9 @@ public class DashboardController {
                 .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
                 .collect(Collectors.toList());
         }
+        listaContratos = listaContratos.stream()
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
+            .collect(Collectors.toList());
         if (listaContratos.isEmpty()) return false;
 
         listaContratos = listaContratos.stream()
@@ -177,6 +183,9 @@ public class DashboardController {
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
         }
+        listaContratos = listaContratos.stream()
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
+            .collect(Collectors.toList());
         if (listaContratos.isEmpty()) return false;
 
         new File(carpetaTempWord).mkdirs();
@@ -207,6 +216,9 @@ public class DashboardController {
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
         }
+        listaContratos = listaContratos.stream()
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
+            .collect(Collectors.toList());
         if (listaContratos.isEmpty()) return false;
 
         listaContratos = listaContratos.stream()
