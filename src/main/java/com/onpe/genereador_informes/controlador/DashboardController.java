@@ -26,12 +26,14 @@ public class DashboardController {
     public List<Contrato> obtenerContratosPorCargoArea(int idCargoArea) {
         return contratoDao.obtenerContratos().stream()
             .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() == idCargoArea)
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
             .collect(Collectors.toList());
     }
 
     public List<Contrato> obtenerDatosParaTabla() {
         return contratoDao.obtenerContratos().stream()
             .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
+            .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
             .collect(Collectors.toList());
     }
 
