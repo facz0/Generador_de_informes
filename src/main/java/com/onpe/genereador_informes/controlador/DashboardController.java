@@ -14,6 +14,9 @@ public class DashboardController {
 
     private static final int ID_CARGO_AREA_SUDIME = 58;
 
+    private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "Generador_Informes" + File.separator;
+    private static final String BASE_DIR_SUDIME = BASE_DIR + "SUDIME" + File.separator;
+
     private ContratoDao contratoDao;
 
     public DashboardController() {
@@ -86,9 +89,9 @@ public class DashboardController {
 
     public boolean generarInformes(List<Contrato> listaContratos) {
         String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/temp/words/";
-        String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/temp/pdfs/";
-        String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/";
+        String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR;
 
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerDatosParaTabla();
@@ -120,9 +123,9 @@ public class DashboardController {
 
     public boolean generarFM38(List<Contrato> listaContratos) {
         String rutaPlantilla   = "plantillas/FM38_formato.docx";
-        String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/temp/words/";
-        String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/temp/pdfs/";
-        String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/";
+        String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR;
 
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerDatosParaTabla();
@@ -167,9 +170,9 @@ public class DashboardController {
 
     public boolean generarInformesSudime(List<Contrato> listaContratos) {
         String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
-        String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/temp/words/";
-        String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/temp/pdfs/";
-        String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/";
+        String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR_SUDIME;
 
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
@@ -197,9 +200,9 @@ public class DashboardController {
 
     public boolean generarFM38Sudime(List<Contrato> listaContratos) {
         String rutaPlantilla   = "plantillas/FM38_formato.docx";
-        String carpetaTempWord = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/temp/words/";
-        String carpetaTempPdf  = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/temp/pdfs/";
-        String carpetaDestino  = "C:/Users/IQUEREVALU/Documents/informess/SUDIME/";
+        String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
+        String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
+        String carpetaDestino  = BASE_DIR_SUDIME;
 
         if (listaContratos == null || listaContratos.isEmpty()) {
             listaContratos = obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
