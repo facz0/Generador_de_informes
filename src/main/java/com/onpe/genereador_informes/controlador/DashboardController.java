@@ -30,11 +30,16 @@ public class DashboardController {
             .collect(Collectors.toList());
     }
 
-    public List<Contrato> obtenerDatosParaTabla() {
+    public List<Contrato> obtenerDatosParaTabla(int idGerencia) {
         return contratoDao.obtenerContratos().stream()
             .filter(c -> c.getPersonal().getCargoArea().getIdCargoArea() != ID_CARGO_AREA_SUDIME)
             .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getPersonal().getEstado()))
+            .filter(c -> idGerencia == 0 || c.getPersonal().getGerencia().getIdGerencia() == idGerencia)
             .collect(Collectors.toList());
+    }
+
+    public List<Contrato> obtenerDatosParaTabla() {
+        return obtenerDatosParaTabla(0);
     }
 
     public List<String> obtenerNombresCargos() {

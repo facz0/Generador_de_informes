@@ -24,6 +24,7 @@ public class SudimeView {
 
     private BorderPane contenedor;
     private DashboardController controlador;
+    private int idGerencia;
 
     private ObservableList<Contrato> datosTabla = FXCollections.observableArrayList();
     private FilteredList<Contrato> filteredData;
@@ -31,13 +32,14 @@ public class SudimeView {
     private Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
     private List<Contrato> datosVisibles = new java.util.ArrayList<>();
 
-    public SudimeView(BorderPane contenedor, DashboardController controlador) {
+    public SudimeView(BorderPane contenedor, DashboardController controlador, int idGerencia) {
         this.contenedor = contenedor;
         this.controlador = controlador;
+        this.idGerencia = idGerencia;
     }
 
     public void mostrar() {
-        contenedor.setTop(DashboardView.crearHeader("SUDIME", "Supervisores de Distribución de Material Electoral"));
+        contenedor.setTop(DashboardView.crearHeader("Supervisores de Distribución de Material Electoral", "SUDIME"));
 
         // ===== TABLA =====
         TableView<Contrato> tabla = new TableView<>();
@@ -88,11 +90,13 @@ public class SudimeView {
 
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colContrato, colOdpe);
 
-        List<Contrato> listaSudime = controlador.obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME);
+        List<Contrato> listaSudime = controlador.obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME).stream()
+            .filter(c -> idGerencia == 0 || c.getPersonal().getGerencia().getIdGerencia() == idGerencia)
+            .collect(java.util.stream.Collectors.toList());
         datosTabla.setAll(listaSudime);
         datosVisibles = new java.util.ArrayList<>(listaSudime);
 
-        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
+        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
         paginador.setDatos(listaSudime);
 
         // ===== BARRA SUPERIOR CON FILTROS =====

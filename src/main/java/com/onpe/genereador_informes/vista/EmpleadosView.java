@@ -94,7 +94,7 @@ public class EmpleadosView {
             }
         });
 
-        paginador = new PaginadorTabla<>(tabla, 20);
+        paginador = new PaginadorTabla<>(tabla, 35);
         cargarTabla();
         paginador.setDatos(datosTabla);
 
