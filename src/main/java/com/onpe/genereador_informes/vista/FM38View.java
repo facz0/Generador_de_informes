@@ -22,6 +22,7 @@ public class FM38View {
 
     private BorderPane contenedor;
     private DashboardController controlador;
+    private int idGerencia;
 
     private ObservableList<Contrato> datosTabla = FXCollections.observableArrayList();
     private FilteredList<Contrato> filteredData;
@@ -29,9 +30,10 @@ public class FM38View {
     private Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
     private List<Contrato> datosVisibles = new java.util.ArrayList<>();
 
-    public FM38View(BorderPane contenedor, DashboardController controlador) {
+    public FM38View(BorderPane contenedor, DashboardController controlador, int idGerencia) {
         this.contenedor = contenedor;
         this.controlador = controlador;
+        this.idGerencia = idGerencia;
     }
 
     public void mostrar() {
@@ -84,11 +86,11 @@ public class FM38View {
         TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
 
-        List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla();
+        List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla(idGerencia);
         datosTabla.setAll(todosLosDatos);
         datosVisibles = new java.util.ArrayList<>(todosLosDatos);
 
-        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
+        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
         paginador.setDatos(todosLosDatos);
 
         // ===== BARRA SUPERIOR CON FILTROS =====

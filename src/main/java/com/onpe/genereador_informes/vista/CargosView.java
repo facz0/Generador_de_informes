@@ -57,7 +57,7 @@ public class CargosView {
         tabla.getColumns().addAll(colNum, colCargo, colArea);
         tabla.setItems(datosTabla);
 
-        paginador = new PaginadorTabla<>(tabla, 20);
+        paginador = new PaginadorTabla<>(tabla, 35);
         cargarTabla();
         paginador.setDatos(datosTabla);
 

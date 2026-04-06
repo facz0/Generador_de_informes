@@ -177,10 +177,9 @@ public class ActividadesView {
 
         txtDescripcion = new TextArea();
         txtDescripcion.setPromptText("Descripción de la actividad...");
-        txtDescripcion.setPrefRowCount(3);
+        txtDescripcion.setPrefRowCount(4);
         txtDescripcion.setWrapText(true);
         txtDescripcion.setStyle("-fx-padding: 8;");
-        VBox.setVgrow(txtDescripcion, Priority.ALWAYS);
 
         btnGuardar = DashboardView.crearBotonAccion("Guardar", "#1D2B61");
         btnGuardar.setMaxWidth(Double.MAX_VALUE);
@@ -210,6 +209,9 @@ public class ActividadesView {
         HBox layout = new HBox(16);
         layout.setPadding(new Insets(20, 24, 16, 24));
         HBox.setHgrow(centroIzq, Priority.ALWAYS);
+        VBox.setVgrow(formulario, Priority.NEVER);
+        javafx.scene.layout.HBox.setMargin(formulario, new Insets(0));
+        layout.setAlignment(javafx.geometry.Pos.TOP_LEFT);
         layout.getChildren().addAll(centroIzq, formulario);
 
         contenedor.setCenter(layout);

@@ -22,6 +22,7 @@ public class InformesView {
 
     private BorderPane contenedor;
     private DashboardController controlador;
+    private int idGerencia;
 
     private ObservableList<Contrato> datosTabla = FXCollections.observableArrayList();
     private FilteredList<Contrato> filteredData;
@@ -29,9 +30,10 @@ public class InformesView {
     private Map<Contrato, BooleanProperty> seleccion = new HashMap<>();
     private List<Contrato> datosVisibles = new java.util.ArrayList<>();
 
-    public InformesView(BorderPane contenedor, DashboardController controlador) {
+    public InformesView(BorderPane contenedor, DashboardController controlador, int idGerencia) {
         this.contenedor = contenedor;
         this.controlador = controlador;
+        this.idGerencia = idGerencia;
     }
 
     public void mostrar() {
@@ -84,12 +86,12 @@ public class InformesView {
         TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
 
-        List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla();
+        List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla(idGerencia);
         datosTabla.setAll(todosLosDatos);
         datosVisibles = new java.util.ArrayList<>(todosLosDatos);
         filteredData = new FilteredList<>(datosTabla, p -> true);
 
-        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 20);
+        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
         paginador.setDatos(todosLosDatos);
 
         // ===== BARRA SUPERIOR CON FILTROS =====

@@ -11,8 +11,7 @@ import java.util.List;
 public class MainApp extends Application {
     @Override
     public void start(Stage stage){
-        DashboardView dashboard = new DashboardView();
-        dashboard.mostrar(stage);
+        new LoginView().mostrar(stage);
     }
 
     public static void main(String[] args) {
