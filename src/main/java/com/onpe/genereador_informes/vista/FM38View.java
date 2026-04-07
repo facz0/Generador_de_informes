@@ -83,14 +83,15 @@ public class FM38View {
         colGerencia.setPrefWidth(200);
         colGerencia.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getGerencia().getNombreGerencia()));
 
-        TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
-        tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
-
         List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla(idGerencia);
         datosTabla.setAll(todosLosDatos);
         datosVisibles = new java.util.ArrayList<>(todosLosDatos);
 
         PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
+
+        TableColumn<Contrato, String> colNum = paginador.crearColumnaNumeroConOffset();
+        tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
+
         paginador.setDatos(todosLosDatos);
 
         // ===== BARRA SUPERIOR CON FILTROS =====
@@ -128,9 +129,13 @@ public class FM38View {
                     ? "¿Generar FM38 para todos los colaboradores visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar FM38 para " + seleccionados.size() + " colaborador(es) seleccionado(s)?");
             if (!confirmar) return;
-            boolean ok = controlador.generarFM38(seleccionados.isEmpty() ? null : seleccionados);
-            if (ok) DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 generados correctamente.");
-            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el FM38. Cierra el PDF si está abierto e intenta de nuevo.");
+            List<Contrato> lista = seleccionados.isEmpty() ? null : seleccionados;
+            DashboardView.ejecutarTareaConCarga(
+                "Generando FM38",
+                () -> controlador.generarFM38(lista),
+                () -> DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 generados correctamente."),
+                () -> DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el FM38. Cierra el PDF si está abierto e intenta de nuevo.")
+            );
         });
 
         bottomBar.getChildren().add(btnGenerar);

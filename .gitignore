@@ -49,3 +49,7 @@ buildNumber.properties
 
 
 
+
+# === INSTALADOR ===
+installer-input/
+installer-output/

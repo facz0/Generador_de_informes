@@ -76,6 +76,15 @@ public class LoginView {
         Runnable accionLogin = () -> {
             String usuario = txtUsuario.getText().trim();
             String contrasena = txtContrasena.getText();
+            if (usuario.isEmpty() || contrasena.isEmpty()) {
+                lblError.setText("⚠ Ingresa usuario y contraseña");
+                return;
+            }
+            // Verificar conexión a BD
+            if (com.onpe.genereador_informes.database.Conexion.obtenerConexion() == null) {
+                lblError.setText("❌ No se pudo conectar a la base de datos");
+                return;
+            }
             String[] datos = usuarioDAO.autenticar(usuario, contrasena);
             if (datos != null) {
                 String nombreCompleto = datos[0];

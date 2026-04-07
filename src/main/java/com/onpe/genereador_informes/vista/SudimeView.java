@@ -69,8 +69,6 @@ public class SudimeView {
             tabla.refresh();
         });
 
-        TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
-
         TableColumn<Contrato, String> colNombre = new TableColumn<>("Colaborador");
         colNombre.setPrefWidth(280);
         colNombre.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getApellido() + " " + cell.getValue().getPersonal().getNombre()));
@@ -88,8 +86,6 @@ public class SudimeView {
         colOdpe.setCellValueFactory(cell -> new SimpleStringProperty(
             cell.getValue().getPersonal().getOdpe() != null ? cell.getValue().getPersonal().getOdpe().getNombreOdpe() : ""));
 
-        tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colContrato, colOdpe);
-
         List<Contrato> listaSudime = controlador.obtenerContratosPorCargoArea(ID_CARGO_AREA_SUDIME).stream()
             .filter(c -> idGerencia == 0 || c.getPersonal().getGerencia().getIdGerencia() == idGerencia)
             .collect(java.util.stream.Collectors.toList());
@@ -97,6 +93,10 @@ public class SudimeView {
         datosVisibles = new java.util.ArrayList<>(listaSudime);
 
         PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
+
+        TableColumn<Contrato, String> colNum = paginador.crearColumnaNumeroConOffset();
+        tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colContrato, colOdpe);
+
         paginador.setDatos(listaSudime);
 
         // ===== BARRA SUPERIOR CON FILTROS =====
@@ -134,9 +134,13 @@ public class SudimeView {
                     ? "¿Generar informes para todos los SUDIME visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar informes para " + seleccionados.size() + " SUDIME seleccionado(s)?");
             if (!confirmar) return;
-            boolean ok = controlador.generarInformesSudime(seleccionados.isEmpty() ? null : seleccionados);
-            if (ok) DashboardView.mostrarAlerta("✅ Informes generados", "Informes SUDIME generados correctamente.");
-            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe SUDIME. Cierra el PDF si está abierto e intenta de nuevo.");
+            List<Contrato> lista = seleccionados.isEmpty() ? null : seleccionados;
+            DashboardView.ejecutarTareaConCarga(
+                "Generando Informe SUDIME",
+                () -> controlador.generarInformesSudime(lista),
+                () -> DashboardView.mostrarAlerta("✅ Informes generados", "Informes SUDIME generados correctamente."),
+                () -> DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe SUDIME. Cierra el PDF si está abierto e intenta de nuevo.")
+            );
         });
 
         Button btnFM38 = DashboardView.crearBotonAccion("Generar FM38", "#2980b9");
@@ -150,9 +154,13 @@ public class SudimeView {
                     ? "¿Generar FM38 para todos los SUDIME visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar FM38 para " + seleccionados.size() + " SUDIME seleccionado(s)?");
             if (!confirmar) return;
-            boolean ok = controlador.generarFM38Sudime(seleccionados.isEmpty() ? null : seleccionados);
-            if (ok) DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 SUDIME generados correctamente.");
-            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el FM38 SUDIME. Cierra el PDF si está abierto e intenta de nuevo.");
+            List<Contrato> lista = seleccionados.isEmpty() ? null : seleccionados;
+            DashboardView.ejecutarTareaConCarga(
+                "Generando FM38 SUDIME",
+                () -> controlador.generarFM38Sudime(lista),
+                () -> DashboardView.mostrarAlerta("✅ FM38 generados", "Formularios FM38 SUDIME generados correctamente."),
+                () -> DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el FM38 SUDIME. Cierra el PDF si está abierto e intenta de nuevo.")
+            );
         });
 
         bottomBar.getChildren().addAll(btnInforme, btnFM38);

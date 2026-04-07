@@ -95,6 +95,10 @@ public class PaginadorTabla<T> {
         return controles;
     }
 
+    public int getOffset() {
+        return paginaActual * tamanioPagina;
+    }
+
     // Columna de numeración reutilizable
     public static <T> TableColumn<T, String> crearColumnaNumero() {
         TableColumn<T, String> colNum = new TableColumn<>("#");
@@ -105,6 +109,21 @@ public class PaginadorTabla<T> {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty ? null : String.valueOf(getIndex() + 1));
+            }
+        });
+        return colNum;
+    }
+
+    // Columna de numeración con offset de página
+    public TableColumn<T, String> crearColumnaNumeroConOffset() {
+        TableColumn<T, String> colNum = new TableColumn<>("#");
+        colNum.setPrefWidth(45);
+        colNum.setMinWidth(45);
+        colNum.setMaxWidth(45);
+        colNum.setCellFactory(col -> new TableCell<>() {
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : String.valueOf(getOffset() + getIndex() + 1));
             }
         });
         return colNum;

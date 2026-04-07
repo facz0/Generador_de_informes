@@ -83,15 +83,15 @@ public class InformesView {
         colGerencia.setPrefWidth(200);
         colGerencia.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getPersonal().getGerencia().getNombreGerencia()));
 
-        TableColumn<Contrato, String> colNum = PaginadorTabla.crearColumnaNumero();
+        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
+
+        TableColumn<Contrato, String> colNum = paginador.crearColumnaNumeroConOffset();
         tabla.getColumns().addAll(colNum, colCheck, colNombre, colDni, colCargo, colGerencia);
 
         List<Contrato> todosLosDatos = controlador.obtenerDatosParaTabla(idGerencia);
         datosTabla.setAll(todosLosDatos);
         datosVisibles = new java.util.ArrayList<>(todosLosDatos);
         filteredData = new FilteredList<>(datosTabla, p -> true);
-
-        PaginadorTabla<Contrato> paginador = new PaginadorTabla<>(tabla, 35);
         paginador.setDatos(todosLosDatos);
 
         // ===== BARRA SUPERIOR CON FILTROS =====
@@ -130,9 +130,13 @@ public class InformesView {
                     ? "¿Generar informes para todos los colaboradores visibles (" + datosVisibles.size() + ")?"
                     : "¿Generar informes para " + seleccionados.size() + " colaborador(es) seleccionado(s)?");
             if (!confirmar) return;
-            boolean ok = controlador.generarInformes(seleccionados.isEmpty() ? null : seleccionados);
-            if (ok) DashboardView.mostrarAlerta("✅ Informes generados", "Informes generados correctamente.");
-            else DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe. Cierra el PDF si está abierto e intenta de nuevo.");
+            List<Contrato> lista = seleccionados.isEmpty() ? null : seleccionados;
+            DashboardView.ejecutarTareaConCarga(
+                "Generando Informes",
+                () -> controlador.generarInformes(lista),
+                () -> DashboardView.mostrarAlerta("✅ Informes generados", "Informes generados correctamente."),
+                () -> DashboardView.mostrarAlerta("❌ Error", "No se pudo generar el informe. Cierra el PDF si está abierto e intenta de nuevo.")
+            );
         });
 
         bottomBar.getChildren().add(btnGenerar);
