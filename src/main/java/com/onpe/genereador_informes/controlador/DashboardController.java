@@ -17,6 +17,28 @@ public class DashboardController {
     private static final String BASE_DIR = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "Generador_Informes" + File.separator;
     private static final String BASE_DIR_SUDIME = BASE_DIR + "SUDIME" + File.separator;
 
+    private static String obtenerDirApp() {
+        try {
+            String rutaJar = DashboardController.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI().getPath();
+            // Limpiar prefijo "/" en Windows (ej: /D:/... -> D:/...)
+            if (rutaJar.startsWith("/") && rutaJar.length() > 2 && rutaJar.charAt(2) == ':') {
+                rutaJar = rutaJar.substring(1);
+            }
+            File dirApp = new File(rutaJar).getParentFile();
+            // En modo desarrollo (Maven): .../target/classes -> subir a raíz del proyecto
+            if (dirApp.getName().equals("classes")) dirApp = dirApp.getParentFile().getParentFile();
+            if (dirApp.getName().equals("target")) dirApp = dirApp.getParentFile();
+            String ruta = dirApp.getAbsolutePath() + File.separator;
+            System.out.println("DirApp resuelto: " + ruta);
+            System.out.println("Plantilla existe: " + new File(ruta + "plantillas/INFORME DE ACTIVIDADES_formato.docx").exists());
+            return ruta;
+        } catch (Exception e) {
+            System.err.println("Error en obtenerDirApp: " + e.getMessage());
+            return "";
+        }
+    }
+
     private ContratoDao contratoDao;
 
     public DashboardController() {
@@ -95,7 +117,8 @@ public class DashboardController {
     // ===== INFORMES GENERALES (excluye SUDIME) =====
 
     public boolean generarInformes(List<Contrato> listaContratos) {
-        String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
+        String dirApp = obtenerDirApp();
+        String rutaPlantilla   = dirApp + "plantillas/INFORME DE ACTIVIDADES_formato.docx";
         String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
         String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
         String carpetaDestino  = BASE_DIR;
@@ -128,11 +151,12 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - MARZO.pdf");
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/INFORME DE ACTIVIDADES - " + obtenerMesActual() + ".pdf");
     }
 
     public boolean generarFM38(List<Contrato> listaContratos) {
-        String rutaPlantilla   = "plantillas/FM38_formato.docx";
+        String dirApp = obtenerDirApp();
+        String rutaPlantilla   = dirApp + "plantillas/FM38_formato.docx";
         String carpetaTempWord = BASE_DIR + "temp" + File.separator + "words" + File.separator;
         String carpetaTempPdf  = BASE_DIR + "temp" + File.separator + "pdfs" + File.separator;
         String carpetaDestino  = BASE_DIR;
@@ -176,13 +200,14 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/FORMATO FM38 - MARZO.pdf");
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/FORMATO FM38 - " + obtenerMesActual() + ".pdf");
     }
 
     // ===== SUDIME =====
 
     public boolean generarInformesSudime(List<Contrato> listaContratos) {
-        String rutaPlantilla   = "plantillas/INFORME DE ACTIVIDADES_formato.docx";
+        String dirApp = obtenerDirApp();
+        String rutaPlantilla   = dirApp + "plantillas/INFORME DE ACTIVIDADES_formato.docx";
         String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
         String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
         String carpetaDestino  = BASE_DIR_SUDIME;
@@ -211,11 +236,12 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES.pdf");
+        return unirPdfs(pdfs, carpetaDestino + "Informes_Actividades/SUDIME - INFORME DE ACTIVIDADES - " + obtenerMesActual() + ".pdf");
     }
 
     public boolean generarFM38Sudime(List<Contrato> listaContratos) {
-        String rutaPlantilla   = "plantillas/FM38_formato.docx";
+        String dirApp = obtenerDirApp();
+        String rutaPlantilla   = dirApp + "plantillas/FM38_formato.docx";
         String carpetaTempWord = BASE_DIR_SUDIME + "temp" + File.separator + "words" + File.separator;
         String carpetaTempPdf  = BASE_DIR_SUDIME + "temp" + File.separator + "pdfs" + File.separator;
         String carpetaDestino  = BASE_DIR_SUDIME;
@@ -255,10 +281,16 @@ public class DashboardController {
             pdfs.add(pdf);
         }
 
-        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/SUDIME - FORMATO FM38.pdf");
+        return unirPdfs(pdfs, carpetaDestino + "Formato_FM38/SUDIME - FORMATO FM38 - " + obtenerMesActual() + ".pdf");
     }
 
     // ===== UTILIDADES =====
+
+    private static String obtenerMesActual() {
+        String[] meses = {"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
+                          "JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"};
+        return meses[java.time.LocalDate.now().getMonthValue() - 1];
+    }
 
     private void convertirWordAPdfConSpire(String rutaWord, String rutaPdf) {
         try {
@@ -267,7 +299,8 @@ public class DashboardController {
             doc.saveToFile(rutaPdf, com.spire.doc.FileFormat.PDF);
             doc.close();
         } catch (Exception e) {
-            System.err.println("Error de conversión: " + rutaWord);
+            System.err.println("Error de conversión [" + rutaWord + "]: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

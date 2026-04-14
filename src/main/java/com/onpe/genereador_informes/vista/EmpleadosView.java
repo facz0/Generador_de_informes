@@ -59,18 +59,8 @@ public class EmpleadosView {
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
         tabla.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<String[], String> colNum = new TableColumn<>("N°");
-        colNum.setCellFactory(col -> new TableCell<String[], String>() {
-            @Override
-            public void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    setText(String.valueOf(getIndex() + 1));
-                }
-            }
-        });
+        paginador = new PaginadorTabla<>(tabla, 35);
+        TableColumn<String[], String> colNum = paginador.crearColumnaNumeroConOffset();
 
         tabla.getColumns().addAll(
                 colNum,
@@ -94,15 +84,16 @@ public class EmpleadosView {
             }
         });
 
-        paginador = new PaginadorTabla<>(tabla, 35);
         cargarTabla();
-        paginador.setDatos(datosTabla);
 
         VBox centro = new VBox(0);
         VBox.setVgrow(tabla, Priority.ALWAYS);
-        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginador.getControles());
+        HBox paginadorBox = paginador.getControles();
+        paginadorBox.setMinHeight(36);
+        VBox.setVgrow(paginadorBox, Priority.NEVER);
+        centro.getChildren().addAll(topBar, contenedorFiltros, tabla, paginadorBox);
         VBox.setMargin(tabla, new Insets(0, 24, 0, 24));
-        VBox.setMargin(paginador.getControles(), new Insets(0, 24, 8, 24));
+        VBox.setMargin(paginadorBox, new Insets(4, 24, 8, 24));
 
         contenedor.setCenter(centro);
 

@@ -37,7 +37,7 @@ public class RegistroView {
         txtConfirm.setStyle("-fx-padding: 9; -fx-font-size: 13px;");
 
         ComboBox<String> comboPerfil = new ComboBox<>();
-        comboPerfil.getItems().addAll("GGE", "SGPE");
+        comboPerfil.getItems().addAll("ADMIN", "GGE", "SGPE");
         comboPerfil.setPromptText("Selecciona un perfil");
         comboPerfil.setMaxWidth(Double.MAX_VALUE);
 
@@ -82,7 +82,7 @@ public class RegistroView {
             if (usuarioDAO.existeUsuario(usuario)) {
                 setMsg(lblMsg, "⚠ El usuario ya existe", false); return;
             }
-            int perfil = switch (perfilStr) { case "GGE" -> 2; default -> 3; };
+            int perfil = switch (perfilStr) { case "ADMIN" -> 1; case "GGE" -> 2; default -> 3; };
             if (usuarioDAO.crear(nombres, apellidos, usuario, pass, perfil)) {
                 DashboardView.mostrarAlerta("✅ Registro exitoso", "Usuario creado correctamente. Ahora puedes iniciar sesión.");
                 new LoginView().mostrar(stage);

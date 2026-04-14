@@ -201,6 +201,36 @@ public class DashboardView {
         return resultado[0];
     }
 
+    static void ejecutarTareaConCarga(String titulo, Runnable tarea, Runnable onExito, Runnable onError) {
+        javafx.scene.control.Alert loadingAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.NONE);
+        loadingAlert.setTitle(titulo);
+        loadingAlert.setHeaderText("Generando documentos, por favor espere...");
+        javafx.scene.control.ProgressIndicator progressIndicator = new javafx.scene.control.ProgressIndicator();
+        loadingAlert.getDialogPane().setContent(progressIndicator);
+        loadingAlert.getDialogPane().getButtonTypes().add(javafx.scene.control.ButtonType.CANCEL);
+        loadingAlert.getDialogPane().lookupButton(javafx.scene.control.ButtonType.CANCEL).setVisible(false);
+
+        javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+            @Override protected Void call() { tarea.run(); return null; }
+        };
+        task.setOnSucceeded(e -> {
+            loadingAlert.setResult(javafx.scene.control.ButtonType.OK);
+            loadingAlert.close();
+            if (onExito != null) javafx.application.Platform.runLater(onExito);
+        });
+        task.setOnFailed(e -> {
+            loadingAlert.setResult(javafx.scene.control.ButtonType.OK);
+            loadingAlert.close();
+            if (onError != null) javafx.application.Platform.runLater(onError);
+            if (task.getException() != null) task.getException().printStackTrace();
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+        loadingAlert.showAndWait();
+    }
+
     private Button crearBotonMenu(String texto) {
         Button btn = new Button(texto);
         btn.setMaxWidth(Double.MAX_VALUE);

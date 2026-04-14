@@ -47,7 +47,8 @@ public class CargosView {
         tabla.setStyle("-fx-background-color: white; -fx-border-color: #e2e8f0;");
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<String[], String> colNum = PaginadorTabla.crearColumnaNumero();
+        paginador = new PaginadorTabla<>(tabla, 35);
+        TableColumn<String[], String> colNum = paginador.crearColumnaNumeroConOffset();
         TableColumn<String[], String> colCargo = new TableColumn<>("Cargo");
         colCargo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue()[1]));
 
@@ -57,7 +58,6 @@ public class CargosView {
         tabla.getColumns().addAll(colNum, colCargo, colArea);
         tabla.setItems(datosTabla);
 
-        paginador = new PaginadorTabla<>(tabla, 35);
         cargarTabla();
         paginador.setDatos(datosTabla);
 
